@@ -1,93 +1,104 @@
-
-import React from 'react';
-import { Settings as SettingsIcon, Bell, CreditCard, Link2, Smartphone, Database } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings as SettingsIcon, CreditCard, Shield, Lock, Trash2, RefreshCw, Layers, Camera, UserCircle } from 'lucide-react';
+import { useApp } from '../App';
 
 const Settings: React.FC = () => {
+  const { activeUser, setActiveUser } = useApp();
+  const [activeTab, setActiveTab] = useState<'profile' | 'api' | 'security'>('profile');
+
+  const handleAvatarUpload = () => {
+    // Simulated upload logic
+    const dummyAvatar = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100";
+    setActiveUser({...activeUser, avatar: dummyAvatar});
+    alert("Profile image uploaded and analyzed. Identity verified.");
+  };
+
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 space-y-8 max-w-5xl mx-auto animate-in fade-in duration-500">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500">Configure global parameters and third-party integrations.</p>
+        <h1 className="text-3xl font-bold font-outfit">Settings</h1>
+        <p className="text-slate-500 font-medium">Manage ecosystem integrations and account security.</p>
       </div>
 
-      <div className="space-y-6">
-        <SettingSection 
-          icon={<Link2 className="text-blue-600" />} 
-          title="Integrations" 
-          description="Manage connections to external services."
-        >
-          <div className="space-y-4 mt-4">
-            <IntegrationItem name="WhatsApp Cloud API" status="Connected" color="bg-emerald-500" />
-            <IntegrationItem name="Shopify Admin API" status="Connected" color="bg-emerald-500" />
-            <IntegrationItem name="Stripe Payments" status="Pending Setup" color="bg-amber-500" />
-            <IntegrationItem name="Instagram Graph API" status="Connected" color="bg-emerald-500" />
-          </div>
-        </SettingSection>
+      <div className="flex flex-col md:flex-row gap-8">
+        <div className="w-full md:w-64 flex flex-row md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+          <NavButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserCircle size={18} />} label="Profile" />
+          <NavButton active={activeTab === 'api'} onClick={() => setActiveTab('api')} icon={<Layers size={18} />} label="API Connect" />
+          <NavButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={<Shield size={18} />} label="Security" />
+        </div>
 
-        <SettingSection 
-          icon={<Bell className="text-purple-600" />} 
-          title="Notification Preferences" 
-          description="Customize how and when staff are notified."
-        >
-          <div className="space-y-4 mt-4">
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-sm font-semibold text-slate-700">Push Notifications for New Leads</span>
-              <div className="relative inline-block w-10 h-6">
-                <input type="checkbox" defaultChecked className="opacity-0 w-0 h-0 peer" />
-                <span className="absolute cursor-pointer inset-0 bg-slate-200 rounded-full transition peer-checked:bg-blue-600"></span>
-                <span className="absolute cursor-pointer left-1 bottom-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-4"></span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-sm font-semibold text-slate-700">Email Daily Analytics Summary</span>
-              <div className="relative inline-block w-10 h-6">
-                <input type="checkbox" className="opacity-0 w-0 h-0 peer" />
-                <span className="absolute cursor-pointer inset-0 bg-slate-200 rounded-full transition peer-checked:bg-blue-600"></span>
-                <span className="absolute cursor-pointer left-1 bottom-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-4"></span>
-              </div>
-            </div>
-          </div>
-        </SettingSection>
+        <div className="flex-1 space-y-6">
+          {activeTab === 'profile' && (
+            <div className="space-y-6 animate-in slide-in-from-right duration-300">
+              <ConfigSection title="Account Identity" description="Update your professional presence in the flow.">
+                <div className="flex items-center gap-8 p-6 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem]">
+                   <div className="relative group">
+                      <div className="w-24 h-24 rounded-[2rem] bg-brand/10 border-2 border-brand/20 flex items-center justify-center overflow-hidden shadow-xl">
+                        {activeUser.avatar ? <img src={activeUser.avatar} className="w-full h-full object-cover" /> : <UserCircle size={40} className="text-brand opacity-30"/>}
+                      </div>
+                      <button onClick={handleAvatarUpload} className="absolute -bottom-2 -right-2 p-2.5 bg-brand text-white rounded-2xl shadow-lg hover:scale-110 transition-transform">
+                         <Camera size={16} />
+                      </button>
+                   </div>
+                   <div className="flex-1">
+                      <p className="text-sm font-bold">{activeUser.name}</p>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Super Admin Role</p>
+                      <button className="mt-4 text-[10px] font-black text-brand uppercase hover:underline">Revoke Access</button>
+                   </div>
+                </div>
+              </ConfigSection>
 
-        <SettingSection 
-          icon={<Database className="text-amber-600" />} 
-          title="Data Management" 
-          description="Control your data storage and retention."
-        >
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <button className="p-4 bg-white border border-slate-200 rounded-xl text-left hover:bg-slate-50 transition-all">
-              <p className="text-sm font-bold text-slate-800 mb-1">Backup Chat History</p>
-              <p className="text-xs text-slate-500">Download all data as JSON</p>
-            </button>
-            <button className="p-4 bg-white border border-slate-200 rounded-xl text-left hover:bg-slate-50 transition-all">
-              <p className="text-sm font-bold text-slate-800 mb-1">Clear Cache</p>
-              <p className="text-xs text-slate-500">Refreshes product embeddings</p>
-            </button>
-          </div>
-        </SettingSection>
+              <ConfigSection title="Business Profile" description="Organization details for automated AI context.">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <InputBox label="Organization" value="Locks & More MY" />
+                  <InputBox label="Support Email" value="support@locksnmore.com" />
+                </div>
+              </ConfigSection>
+            </div>
+          )}
+
+          {activeTab === 'api' && (
+            <div className="space-y-6 animate-in slide-in-from-right duration-300">
+              <ConfigSection title="Platform Sync" description="Manage Shopify and social webhooks.">
+                 <IntegrationItem name="Shopify Engine" detail="locksnmore.myshopify.com" status="ACTIVE" />
+                 <IntegrationItem name="Meta Cloud API" detail="WhatsApp Business ID: 10455..." status="ACTIVE" />
+              </ConfigSection>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-const SettingSection: React.FC<{icon: React.ReactNode, title: string, description: string, children: React.ReactNode}> = ({icon, title, description, children}) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-    <div className="flex items-center gap-3 mb-2">
-      <div className="p-2 bg-slate-100 rounded-xl">{icon}</div>
-      <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+const NavButton = ({ active, onClick, icon, label }: any) => (
+  <button onClick={onClick} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${active ? 'bg-brand text-white shadow-xl shadow-brand/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900'}`}>{icon} {label}</button>
+);
+
+const ConfigSection = ({ title, description, children }: any) => (
+  <div className="bg-surface dark:bg-slate-900 p-6 sm:p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+    <div className="mb-6">
+      <h3 className="text-lg font-bold font-outfit uppercase tracking-tighter">{title}</h3>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{description}</p>
     </div>
-    <p className="text-sm text-slate-500 ml-12">{description}</p>
-    <div className="ml-12 mt-4">{children}</div>
+    {children}
   </div>
 );
 
-const IntegrationItem: React.FC<{name: string, status: string, color: string}> = ({name, status, color}) => (
-  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-    <span className="text-sm font-bold text-slate-700">{name}</span>
-    <div className="flex items-center gap-2">
-      <div className={`w-2 h-2 rounded-full ${color}`}></div>
-      <span className="text-xs font-bold text-slate-500 uppercase">{status}</span>
-    </div>
+const IntegrationItem = ({ name, detail, status }: any) => (
+  <div className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+     <div>
+       <p className="text-xs font-bold">{name}</p>
+       <p className="text-[10px] text-slate-500">{detail}</p>
+     </div>
+     <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-600 px-2 py-1 rounded-lg uppercase tracking-widest">{status}</span>
+  </div>
+);
+
+const InputBox = ({ label, value }: any) => (
+  <div>
+    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">{label}</label>
+    <input type="text" readOnly className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold" defaultValue={value} />
   </div>
 );
 

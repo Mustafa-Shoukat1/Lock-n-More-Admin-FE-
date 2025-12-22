@@ -1,6 +1,7 @@
 export const translations = {
   en: {
     dashboard: "Dashboard",
+    analytics: "Analytics",
     inbox: "Inbox",
     aiManager: "AI Management",
     products: "Products",
@@ -28,6 +29,7 @@ export const translations = {
   },
   ms: {
     dashboard: "Papan Pemuka",
+    analytics: "Analitis",
     inbox: "Peti Masuk",
     aiManager: "Pengurusan AI",
     products: "Katalog Produk",

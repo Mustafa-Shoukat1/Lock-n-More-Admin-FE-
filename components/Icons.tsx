@@ -27,22 +27,21 @@ export const TikTokIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-export const AppLogo = ({ className = "" }) => (
-  <div className={`flex items-center gap-2 ${className}`}>
-    <div className="relative">
-      <div className="w-10 h-10 bg-brand rounded-xl flex items-center justify-center shadow-lg shadow-brand/20">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
+export const AppLogo = ({ className = "", compact = false }) => (
+  <div className={`flex items-center gap-3 ${className}`}>
+    <div className="flex-shrink-0 relative group">
+      {/* Recreating the provided logo: LOCKS 'N MORE with shield */}
+      <div className="flex items-center gap-1.5 font-black text-xl tracking-tighter">
+        {!compact && <span className="text-slate-900 dark:text-white">LOCKS</span>}
+        <div className="relative">
+          <svg width="32" height="38" viewBox="0 0 32 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0L0 7V17.5C0 26.5 6.8 34.8 16 38C25.2 34.8 32 26.5 32 17.5V7L16 0Z" fill="#DC2626"/>
+            <path d="M16 4L3 9.6V17.5C3 24.8 8.6 31.4 16 34.1C23.4 31.4 29 24.8 29 17.5V9.6L16 4Z" fill="white"/>
+            <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="#111827" fontSize="12" fontWeight="900" fontFamily="Inter">'N</text>
+          </svg>
+        </div>
+        {!compact && <span className="text-slate-900 dark:text-white">MORE</span>}
       </div>
-      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center">
-        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-      </div>
-    </div>
-    <div className="flex flex-col">
-      <span className="text-lg font-bold leading-tight tracking-tight text-slate-900 dark:text-white font-outfit">Locks & More</span>
-      <span className="text-[10px] font-bold text-brand uppercase tracking-widest leading-none">AI Sales Flow</span>
     </div>
   </div>
 );

@@ -44,6 +44,7 @@ export interface User {
   role: UserRole;
   active: boolean;
   lastLogin: string;
+  avatar?: string;
 }
 
 export interface Session {
@@ -52,4 +53,11 @@ export interface Session {
   device: string;
   ip: string;
   lastSeen: string;
+}
+
+export interface AiSettings {
+  personality: 'professional' | 'helpful' | 'aggressive' | 'passive';
+  tone: 'formal' | 'casual' | 'urgent' | 'empathetic';
+  responseLength: number; // 0-100
+  creativity: number; // 0-100
 }
