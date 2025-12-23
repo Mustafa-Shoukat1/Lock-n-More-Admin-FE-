@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Light Theme Palette */
             --bg-primary: #F3F4F6;
             --bg-surface: #FFFFFF;
             --bg-sidebar: #FFFFFF;
@@ -22,7 +21,6 @@
         }
 
         .dark {
-            /* Dark Theme Palette */
             --bg-primary: #0F172A;
             --bg-surface: #1E293B;
             --bg-sidebar: #0B1120;
@@ -35,11 +33,19 @@
             --border-color: #334155;
         }
 
+        /* HARD RESET: NO ANIMATIONS OR MOVING OBJECTS */
+        *, *::before, *::after {
+            animation: none !important;
+            transition: none !important;
+            transition-duration: 0s !important;
+            animation-duration: 0s !important;
+            scroll-behavior: auto !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-main);
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         h1, h2, h3, .font-outfit {
@@ -54,8 +60,7 @@
         }
         ::-webkit-scrollbar-thumb {
             background: var(--text-muted);
-            border-radius: 10px;
-            opacity: 0.3;
+            border-radius: 0px;
         }
     </style>
     <script>

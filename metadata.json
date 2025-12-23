@@ -2,6 +2,7 @@
   "name": "AI Sales Admin Panel",
   "description": "A comprehensive administration dashboard and human override system for managing AI-driven sales across WhatsApp, Instagram, and TikTok, featuring real-time monitoring, AI response management, and Shopify integration.",
   "requestFramePermissions": [
+    "camera",
     "microphone"
   ]
 }

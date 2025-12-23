@@ -9,7 +9,7 @@ import Products from './pages/Products';
 import Settings from './pages/Settings';
 import UserManagement from './pages/UserManagement';
 import Analytics from './pages/Analytics';
-import { Language, Product, Conversation, User as UserType, AiSettings } from './types';
+import { Language, Product, Conversation, User as UserType, AiSettings, Message } from './types';
 import { translations } from './i18n';
 import { LayoutDashboard, MessageSquare, Package, BarChart3 } from 'lucide-react';
 
@@ -31,6 +31,8 @@ interface AppContextType {
   setStaff: React.Dispatch<React.SetStateAction<UserType[]>>;
   aiSettings: AiSettings;
   setAiSettings: React.Dispatch<React.SetStateAction<AiSettings>>;
+  sendMessage: (convId: string, text: string, sender: 'staff' | 'ai', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
+  assignStaff: (convId: string, staffName: string) => void;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -47,18 +49,17 @@ const BottomNav: React.FC = () => {
     { name: t('dashboard'), icon: <LayoutDashboard size={20} />, path: '/dashboard' },
     { name: t('inbox'), icon: <MessageSquare size={20} />, path: '/inbox' },
     { name: t('products'), icon: <Package size={20} />, path: '/products' },
-    { name: t('analytics'), icon: <BarChart3 size={20} />, path: '/analytics' },
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-surface/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 pb-safe z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+    <div className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-surface border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 pb-safe z-50 shadow-md">
       {navItems.map((item) => (
         <NavLink
           key={item.path}
           to={item.path}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center flex-1 py-1 transition-all ${
-              isActive ? 'text-brand scale-110 font-black' : 'text-slate-400'
+            `flex flex-col items-center justify-center flex-1 py-1 ${
+              isActive ? 'text-brand font-black' : 'text-slate-400'
             }`
           }
         >
@@ -90,7 +91,6 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'New High Priority Lead', message: 'Beh Chen is asking about smart locks.', type: 'lead', time: '2m ago', read: false },
     { id: 2, title: 'Shopify Sync Success', message: '124 products updated.', type: 'system', time: '1h ago', read: false },
-    { id: 3, title: 'AI Escalation', message: 'Customer needs human help on TikTok.', type: 'alert', time: '3h ago', read: false },
   ]);
 
   const [products, setProducts] = useState<Product[]>([
@@ -102,16 +102,37 @@ const App: React.FC = () => {
     { id: '1', customerName: 'Beh Chen', customerPhone: '+60 12-345 6789', platform: 'whatsapp', lastMessage: 'Sliding door locks?', lastTimestamp: '10:42 AM', unreadCount: 2, isHumanTakeover: false, priority: 'high', status: 'active', messages: [{ id: 'm1', sender: 'customer', text: 'Sliding door locks?', timestamp: '10:42 AM', type: 'text' }] },
     { id: '2', customerName: 'Sarah Lim', customerPhone: '@sarah_l', platform: 'instagram', lastMessage: 'Thank you!', lastTimestamp: '09:15 AM', unreadCount: 0, isHumanTakeover: false, priority: 'low', status: 'active', messages: [] },
     { id: '3', customerName: 'Ahmad Faiz', customerPhone: '@faiz_locks', platform: 'tiktok', lastMessage: 'Show A100 photos', lastTimestamp: '08:10 AM', unreadCount: 1, isHumanTakeover: true, assignedStaff: 'Staff 1', priority: 'medium', status: 'active', messages: [] },
-    { id: '4', customerName: 'Dummy Chat 1', customerPhone: '+60 11-123 4444', platform: 'whatsapp', lastMessage: 'Checking prices', lastTimestamp: '07:30 AM', unreadCount: 0, isHumanTakeover: false, priority: 'high', status: 'active', messages: [] },
-    { id: '5', customerName: 'Dummy Chat 2', customerPhone: '@user_insta_01', platform: 'instagram', lastMessage: 'In stock?', lastTimestamp: '06:45 AM', unreadCount: 0, isHumanTakeover: false, priority: 'medium', status: 'active', messages: [] },
-    { id: '6', customerName: 'Dummy Chat 3', customerPhone: '@tiktok_fan_01', platform: 'tiktok', lastMessage: 'Shipping info?', lastTimestamp: '05:20 AM', unreadCount: 0, isHumanTakeover: false, priority: 'low', status: 'active', messages: [] }
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
-    { id: 'staff1', name: 'Staff 1', email: 'staff1@locksnmore.com', role: 'agent', active: true, lastLogin: '1h ago', avatar: 'https://i.pravatar.cc/150?u=staff1' },
-    { id: 'staff2', name: 'Staff 2', email: 'staff2@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=staff2' },
-    { id: 'staff3', name: 'Staff 3', email: 'staff3@locksnmore.com', role: 'agent', active: false, lastLogin: '1d ago', avatar: 'https://i.pravatar.cc/150?u=staff3' },
+    { id: 'staff1', name: 'Mustafa S.', email: 'admin@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
+    { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
   ]);
+
+  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newMessage: Message = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender,
+      text,
+      timestamp,
+      type,
+      mediaUrl,
+      status: 'sent'
+    };
+
+    setConversations(prev => prev.map(c => 
+      c.id === convId 
+        ? { ...c, messages: [...c.messages, newMessage], lastMessage: type === 'image' ? 'Sent an image' : (type === 'voice' ? 'Sent a voice message' : text), lastTimestamp: timestamp }
+        : c
+    ));
+  };
+
+  const assignStaff = (convId: string, staffName: string) => {
+    setConversations(prev => prev.map(c => 
+      c.id === convId ? { ...c, assignedStaff: staffName, isHumanTakeover: true } : c
+    ));
+  };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
 
@@ -119,14 +140,14 @@ const App: React.FC = () => {
     <AppContext.Provider value={{ 
       lang, setLang, t, searchQuery, setSearchQuery, activeUser, setActiveUser,
       notifications, setNotifications, products, setProducts, conversations, setConversations,
-      staff, setStaff, aiSettings, setAiSettings
+      staff, setStaff, aiSettings, setAiSettings, sendMessage, assignStaff
     }}>
       <Router>
-        <div className="flex h-screen overflow-hidden bg-primary transition-colors duration-300">
+        <div className="flex h-screen overflow-hidden bg-primary">
           <Sidebar />
           <div className="flex flex-col flex-1 w-0 overflow-hidden">
             <Header />
-            <main className="flex-1 relative overflow-y-auto focus:outline-none pb-20 md:pb-0 scrollbar-thin">
+            <main className="flex-1 relative overflow-y-auto focus:outline-none pb-20 md:pb-0 scrollbar-none">
               <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" />} />
                 <Route path="/dashboard" element={<Dashboard />} />
