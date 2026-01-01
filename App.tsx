@@ -15,7 +15,7 @@ import { Language, Product, Conversation, User as UserType, AiSettings, Message 
 import { translations } from './i18n';
 import { LayoutDashboard, MessageSquare, Package, BookOpen, ShoppingCart } from 'lucide-react';
 
-const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
+const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3'; // High-quality 'ding'
 
 interface Order {
   id: string;
@@ -32,7 +32,7 @@ interface AppContextType {
   t: (key: string) => string;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  activeUser: { name: string; role: string; id: string; avatar?: string };
+  activeUser: { name: string; role: string; id: string; avatar?: string; email?: string };
   setActiveUser: (u: any) => void;
   notifications: any[];
   setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
@@ -100,6 +100,7 @@ const App: React.FC = () => {
     name: 'Mustafa Shoukat', 
     role: 'Super Admin', 
     id: 'admin1',
+    email: 'admin@locksnmore.com',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100'
   });
   
@@ -118,35 +119,50 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([
     { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200' },
     { id: '2', name: 'Slim-Fit Deadbolt X1', price: 899.00, stock: 12, category: 'Deadbolts', sku: 'SD-X1-BL', image: 'https://images.unsplash.com/photo-1510003307521-f09516640925?auto=format&fit=crop&q=80&w=200' },
-    { id: '3', name: 'TOTO Face-ID Node V3', price: 2199.00, stock: 8, category: 'Facial Recognition', sku: 'FR-FACE1', image: 'https://images.unsplash.com/photo-1518005020251-5830d624ef7c?auto=format&fit=crop&q=80&w=200' },
   ]);
 
   const [conversations, setConversations] = useState<Conversation[]>([
     { id: '1', customerName: 'Beh Chen', customerPhone: '+60 12-345 6789', platform: 'whatsapp', lastMessage: 'Biometric locks for sliding doors?', lastTimestamp: '10:42 AM', unreadCount: 2, isHumanTakeover: false, priority: 'high', status: 'active', messages: [
       { id: 'm1', sender: 'customer', text: 'Hi, I saw your ad on Facebook.', timestamp: '10:40 AM', type: 'text' },
-      { id: 'm2', sender: 'ai', text: 'Hello Beh! I am the TOTO assistant. How can I help you today?', timestamp: '10:41 AM', type: 'text' },
+      { id: 'm2', sender: 'ai', text: 'Hello Beh! I am the TOTO assistant. How can I help you today?', timestamp: '10:41 AM', type: 'text', status: 'read' },
       { id: 'm3', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
     ] },
-    { id: '2', customerName: 'Sarah Lim', customerPhone: '@sarah_l', platform: 'instagram', lastMessage: 'Thank you for the help!', lastTimestamp: '09:15 AM', unreadCount: 0, isHumanTakeover: false, priority: 'low', status: 'active', messages: [] },
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
     { id: 'staff1', name: 'Mustafa S.', email: 'admin@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
     { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+    { id: 'staff3', name: 'Agent Daniel', email: 'daniel@locksnmore.com', role: 'agent', active: true, lastLogin: '12m ago', avatar: 'https://i.pravatar.cc/150?u=daniel' },
   ]);
 
   const [orders, setOrders] = useState<Order[]>([
     { id: '#TOTO-1024', customer: 'Beh Chen', status: 'fulfilled', amount: 1299.00, date: 'Today, 10:45 AM', platform: 'whatsapp' },
-    { id: '#TOTO-1023', customer: 'Sarah Lim', status: 'pending', amount: 899.00, date: 'Today, 09:15 AM', platform: 'instagram' },
   ]);
 
   const prevNotificationCount = useRef(notifications.length);
 
   const playNotificationSound = () => {
     const audio = new Audio(NOTIFICATION_SOUND_URL);
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
+    audio.volume = 0.6;
+    audio.play().catch(e => console.warn("Audio playback failed:", e));
   };
+
+  // Simulate read status updates for sent messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setConversations(prev => prev.map(conv => ({
+        ...conv,
+        messages: conv.messages.map(msg => {
+          if (msg.sender !== 'customer') {
+            if (msg.status === 'sent') return { ...msg, status: 'delivered' };
+            if (msg.status === 'delivered') return { ...msg, status: 'read' };
+          }
+          return msg;
+        })
+      })));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (notifications.length > prevNotificationCount.current) {
@@ -170,7 +186,7 @@ const App: React.FC = () => {
 
     setConversations(prev => prev.map(c => 
       c.id === convId 
-        ? { ...c, messages: [...c.messages, newMessage], lastMessage: type === 'image' ? 'Sent an image' : (type === 'voice' ? 'Sent a voice message' : text), lastTimestamp: timestamp, unreadCount: 0 }
+        ? { ...c, messages: [...c.messages, newMessage], lastMessage: type === 'voice' ? 'Sent a voice message' : text, lastTimestamp: timestamp, unreadCount: 0 }
         : c
     ));
   };
@@ -180,8 +196,6 @@ const App: React.FC = () => {
     if (!activeChat) return;
 
     const invoiceId = `#TOTO-${1025 + orders.length}`;
-    const invoiceLink = `https://checkout.shopify.com/toto/${invoiceId.replace('#', '')}`;
-    
     const newOrder: Order = {
       id: invoiceId,
       customer: activeChat.customerName,
@@ -192,12 +206,12 @@ const App: React.FC = () => {
     };
 
     setOrders(prev => [newOrder, ...prev]);
-    sendMessage(convId, `Order generated! Secure Shopify Invoice Link: ${invoiceLink}\nTotal: RM ${amount.toLocaleString()}`, 'staff');
+    sendMessage(convId, `Order generated! Secure Shopify Invoice Link: https://checkout.shopify.com/toto/${invoiceId}\nTotal: RM ${amount.toLocaleString()}`, 'staff');
     
     setNotifications(prev => [{
       id: Date.now(),
-      title: 'Order Synchronized',
-      message: `Invoice ${invoiceId} deployed for ${activeChat.customerName}.`,
+      title: 'Order Generated',
+      message: `Invoice ${invoiceId} for RM ${amount.toLocaleString()} sent to ${activeChat.customerName}.`,
       type: 'system',
       time: 'Just now',
       read: false
@@ -207,32 +221,29 @@ const App: React.FC = () => {
   const simulateLead = () => {
     const names = ['Wei Lung', 'Aisha', 'Ramesh', 'Kevin Tan', 'Siti'];
     const platforms: any[] = ['whatsapp', 'instagram', 'tiktok'];
-    const queries = ['Do you have stock for A100?', 'Can I install this on a fire door?', 'Is there a warranty?', 'I want to buy 3 units.'];
-    
     const name = names[Math.floor(Math.random() * names.length)];
     const platform = platforms[Math.floor(Math.random() * platforms.length)];
-    const query = queries[Math.floor(Math.random() * queries.length)];
     const id = (conversations.length + 1).toString();
 
     const newConv: Conversation = {
       id,
       customerName: name,
-      customerPhone: platform === 'whatsapp' ? '+60 1x-xxx xxxx' : `@${name.toLowerCase()}`,
+      customerPhone: '+60 1x-xxx xxxx',
       platform,
-      lastMessage: query,
+      lastMessage: 'I want to ask about your face-ID locks.',
       lastTimestamp: 'Just Now',
       unreadCount: 1,
       isHumanTakeover: false,
       priority: 'high',
       status: 'active',
-      messages: [{ id: 'sm1', sender: 'customer', text: query, timestamp: 'Just Now', type: 'text' }]
+      messages: [{ id: Math.random().toString(), sender: 'customer', text: 'I want to ask about your face-ID locks.', timestamp: 'Just Now', type: 'text' }]
     };
 
     setConversations(prev => [newConv, ...prev]);
     setNotifications(prev => [{
       id: Date.now(),
-      title: 'New Signal Detected',
-      message: `${name} started a thread on ${platform.toUpperCase()}.`,
+      title: 'New Lead Node',
+      message: `${name} initiated a thread via ${platform.toUpperCase()}.`,
       type: 'lead',
       time: 'Just now',
       read: false
