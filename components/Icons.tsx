@@ -28,20 +28,41 @@ export const TikTokIcon = ({ size = 20, className = "" }) => (
 );
 
 export const AppLogo = ({ className = "", compact = false }) => (
-  <div className={`flex items-center gap-3 ${className}`}>
-    <div className="flex-shrink-0 relative group">
-      {/* Recreating the provided logo: LOCKS 'N MORE with shield */}
-      <div className="flex items-center gap-1.5 font-black text-xl tracking-tighter">
-        {!compact && <span className="text-slate-900 dark:text-white">LOCKS</span>}
-        <div className="relative">
-          <svg width="32" height="38" viewBox="0 0 32 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16 0L0 7V17.5C0 26.5 6.8 34.8 16 38C25.2 34.8 32 26.5 32 17.5V7L16 0Z" fill="#DC2626"/>
-            <path d="M16 4L3 9.6V17.5C3 24.8 8.6 31.4 16 34.1C23.4 31.4 29 24.8 29 17.5V9.6L16 4Z" fill="white"/>
-            <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="#111827" fontSize="12" fontWeight="900" fontFamily="Inter">'N</text>
-          </svg>
-        </div>
-        {!compact && <span className="text-slate-900 dark:text-white">MORE</span>}
+  <div className={`flex items-center gap-2 ${className}`}>
+    <div className="flex items-center font-black text-2xl tracking-tight">
+      {!compact && (
+        <span className="text-slate-900 dark:text-white mr-1.5 font-outfit uppercase">LOCKS</span>
+      )}
+      <div className="relative flex items-center justify-center">
+        <svg width="34" height="40" viewBox="0 0 34 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Main Red Shield Outline */}
+          <path 
+            d="M17 0L2 6.5V18.5C2 28.5 8.5 36.5 17 40C25.5 36.5 32 28.5 32 18.5V6.5L17 0Z" 
+            fill="#E11D48" 
+          />
+          {/* White Shield Interior */}
+          <path 
+            d="M17 4L5 9.2V18.5C5 26.5 10 33.5 17 36.5C24 33.5 29 26.5 29 18.5V9.2L17 4Z" 
+            fill="white" 
+          />
+          {/* Central 'N Text */}
+          <text 
+            x="50%" 
+            y="62%" 
+            dominantBaseline="middle" 
+            textAnchor="middle" 
+            fill="#1E293B" 
+            fontSize="16" 
+            fontWeight="900" 
+            fontFamily="Outfit, sans-serif"
+          >
+            'N
+          </text>
+        </svg>
       </div>
+      {!compact && (
+        <span className="text-slate-900 dark:text-white ml-1.5 font-outfit uppercase">MORE</span>
+      )}
     </div>
   </div>
 );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Shield, Activity, MoreVertical, Mail, Laptop, Smartphone, Lock, X, CheckCircle2, MailPlus } from 'lucide-react';
+import { UserPlus, Shield, Activity, MoreVertical, Mail, Laptop, Smartphone, Lock, X, CheckCircle2, MailPlus, ShieldCheck } from 'lucide-react';
 import { useApp } from '../App';
 
 const UserManagement: React.FC = () => {
@@ -31,7 +31,7 @@ const UserManagement: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white font-outfit">Staff Perimeter</h1>
-          <p className="text-slate-500">Manage team accounts and security roles.</p>
+          <p className="text-slate-500">Manage TOTO node accounts and security roles.</p>
         </div>
         <button 
           onClick={() => setShowInviteModal(true)}
@@ -39,6 +39,14 @@ const UserManagement: React.FC = () => {
         >
           <UserPlus size={16} className="inline mr-2" /> Invite Node
         </button>
+      </div>
+
+      <div className="p-6 bg-brand/5 border border-brand/20 rounded-3xl flex items-center gap-6">
+        <ShieldCheck className="text-brand shrink-0" size={32} />
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-tight">NDA Compliance Active</h3>
+          <p className="text-xs text-slate-500">All staff interactions are logged and encrypted. Credential handling follows NDA-compliant protocols as defined in the TOTO Master Proposal.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -51,7 +59,7 @@ const UserManagement: React.FC = () => {
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/80">
           <div className="bg-surface dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-2xl">
              <div className="flex items-center justify-between mb-10">
-               <h2 className="text-2xl font-bold font-outfit">Invite Team Member</h2>
+               <h2 className="text-2xl font-bold font-outfit">Invite TOTO Member</h2>
                <button onClick={() => setShowInviteModal(false)} className="p-2 text-slate-400"><X size={28}/></button>
              </div>
              <div className="space-y-6">
@@ -72,6 +80,9 @@ const UserManagement: React.FC = () => {
                   <option value="agent">Sales Agent</option>
                   <option value="admin">Admin Manager</option>
                 </select>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                  <p className="text-[10px] text-slate-400 font-bold">New users must sign the electronic NDA before their first login node access is granted.</p>
+                </div>
                 <button onClick={handleInvite} className="w-full py-5 bg-brand text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3">
                   <MailPlus size={20} /> Send magic link
                 </button>

@@ -1,20 +1,46 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# TOTO // Centralized AI Messaging & Automation Platform
 
-# Run and deploy your AI Studio app
+## 📌 A-Z Project Definition
+TOTO is a sophisticated unified inbox and AI-driven commerce ecosystem designed to replace fragmented customer service tools with a single "Perimeter Intelligence Node." It bridges social messaging signals with real-time Shopify business logic.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/drive/18bwltMN0A8o4aFxiuWIkc84pZBTxfa3P
+## 🚀 Core Functional Goals
+1. **Centralized Admin Panel**: A single responsive web interface for WhatsApp, Instagram, and TikTok conversations.
+2. **Shopify Integration**: Automated, context-aware replies using real-time product data, inventory status, and order tracking.
+3. **Agentic AI Brain**: Powered by Google Gemini 3 Flash, trained to mimic brand tone and provide high-accuracy sales support.
+4. **Hybrid Human Handover**: A robust mechanism for human agents to "Takeover" from AI when a high-value lead is identified.
+5. **Staff Accountability**: Individual node (agent) assignments with per-user notification and unread tracking.
 
-## Run Locally
+---
 
-**Prerequisites:**  Node.js
+## 🛠 Technical Stack & Integrations
+- **UI Framework**: React 19 (Strictly Static UI Philosophy for Maximum Speed)
+- **Intelligence**: Gemini 3 Flash-Preview (LLM Reasoning Layer)
+- **Messaging Engine**: Official Meta WhatsApp Business API
+- **Commerce Logic**: Shopify SDK / Admin API for real-time SKU data.
+- **Automation Orchestrator**: Conceptually powered by n8n for multi-service data routing.
+- **Styling**: Tailwind CSS with hard resets for zero-animation performance.
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📅 Roadmap & Milestones (60 Days)
+- **Phase 1 (Day 1-20)**: Core Platform Setup. Admin Panel, WhatsApp API integration, and user authentication.
+- **Phase 2 (Day 21-40)**: AI & E-commerce. Gemini Brain training, Shopify catalog sync, and human takeover protocol.
+- **Phase 3 (Day 41-60)**: Finalization. Instagram/TikTok hooks, full QA, n8n finalization, and documentation handover.
+
+---
+
+## 🔐 Security & Operations
+- **RBAC**: Role-Based Access Control (Super Admin vs Agent).
+- **Perimeter Security**: Secure API key management via environment variables.
+- **Strictly Static UI**: All transitions and animations are disabled to ensure the UI remains instantaneous under heavy sales traffic.
+
+---
+
+## 🧠 Documentation Node
+A comprehensive **A-Z System Guide** is built directly into the application under the **"System Docs"** sidebar link. This is the source of truth for all operational procedures and technical architectures.
+
+---
+**Prepared for: Beh SM // Prepared by: Mustafa Shoukat**
+**Locks 'N More 2025 // TOTO Platform Ecosystem**
