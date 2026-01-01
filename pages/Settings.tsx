@@ -1,18 +1,17 @@
 
 import React, { useState } from 'react';
-import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Trash2, Smartphone, Zap, Activity, Mail, LogOut, MailPlus, CheckCircle2, X, AlertTriangle, ShieldAlert, Key, Globe } from 'lucide-react';
+import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Trash2, Smartphone, Zap, Activity, Mail, LogOut, MailPlus, CheckCircle2, X, AlertTriangle, ShieldAlert, Key, Globe, Database } from 'lucide-react';
 import { useApp } from '../App';
-// Fix: Import useNavigate from 'react-router' to resolve missing export errors from 'react-router-dom'.
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 const Settings: React.FC = () => {
-  const { activeUser, setActiveUser, staff, setStaff, playNotificationSound } = useApp();
+  const { activeUser, setActiveUser, staff, setStaff, playNotificationSound, resetDatabase } = useApp();
   const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'integrations' | 'system'>('profile');
   const [showInviteModal, setShowInviteModal] = useState(false);
   const navigate = useNavigate();
   
-  const [editName, setEditName] = useState(activeUser.name);
-  const [editEmail, setEditEmail] = useState(activeUser.email || '');
+  const [editName, setEditName] = useState(activeUser?.name || '');
+  const [editEmail, setEditEmail] = useState(activeUser?.email || '');
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -50,13 +49,8 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleAvatarUpload = () => {
-    const dummyAvatar = `https://i.pravatar.cc/150?u=${Date.now()}`;
-    setActiveUser({...activeUser, avatar: dummyAvatar});
-  };
-
   return (
-    <div className="p-4 sm:p-10 space-y-12 max-w-7xl mx-auto animate-in fade-in duration-500 pb-32">
+    <div className="p-4 sm:p-10 space-y-12 max-w-7xl mx-auto animate-in fade-in duration-500 pb-32 text-left">
       {/* Admin Hub Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 bg-slate-900 p-12 rounded-[4rem] text-white border border-slate-800 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-16 opacity-10 rotate-12 pointer-events-none text-brand">
@@ -84,7 +78,7 @@ const Settings: React.FC = () => {
           <NavButton active={activeTab === 'integrations'} onClick={() => setActiveTab('integrations')} icon={<Layers size={20} />} label="Signal Gateways" />
           <NavButton active={activeTab === 'system'} onClick={() => setActiveTab('system')} icon={<Lock size={20} />} label="System Lockdown" />
           <div className="mt-12 pt-12 border-t border-slate-100 dark:border-slate-800">
-            <button onClick={() => navigate('/dashboard')} className="w-full flex items-center gap-5 px-8 py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all border border-transparent hover:border-red-500/20">
+            <button onClick={() => navigate('/dashboard')} className="w-full flex items-center gap-5 px-8 py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all">
                <LogOut size={20} /> End Session
             </button>
           </div>
@@ -98,14 +92,14 @@ const Settings: React.FC = () => {
                 <div className="flex flex-col md:flex-row items-center gap-12 p-12 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[4rem] mb-12 shadow-sm">
                    <div className="relative group">
                       <div className="w-48 h-48 rounded-[3.5rem] bg-brand/10 border-4 border-white dark:border-slate-800 flex items-center justify-center overflow-hidden shadow-2xl transition-transform group-hover:scale-[1.03]">
-                        {activeUser.avatar ? <img src={activeUser.avatar} className="w-full h-full object-cover" /> : <UserCircle size={100} className="text-brand opacity-20"/>}
+                        {activeUser?.avatar ? <img src={activeUser.avatar} className="w-full h-full object-cover" /> : <UserCircle size={100} className="text-brand opacity-20"/>}
                       </div>
-                      <button onClick={handleAvatarUpload} className="absolute -bottom-4 -right-4 p-5 bg-brand text-white rounded-[2rem] shadow-2xl hover:scale-110 active:scale-90 transition-all border-4 border-white dark:border-slate-900">
+                      <button className="absolute -bottom-4 -right-4 p-5 bg-brand text-white rounded-[2rem] shadow-2xl hover:scale-110 active:scale-90 transition-all border-4 border-white dark:border-slate-900">
                          <Camera size={26} />
                       </button>
                    </div>
                    <div className="flex-1 text-center md:text-left space-y-5">
-                      <h4 className="text-4xl font-bold font-outfit text-slate-900 dark:text-white leading-none tracking-tight">{activeUser.name}</h4>
+                      <h4 className="text-4xl font-bold font-outfit text-slate-900 dark:text-white leading-none tracking-tight">{activeUser?.name}</h4>
                       <p className="text-[11px] text-brand font-black uppercase tracking-[0.4em] flex items-center justify-center md:justify-start gap-2 leading-none"><CheckCircle2 size={14}/> Root Security Node</p>
                       <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-3">
                          <span className="px-5 py-2.5 bg-emerald-500/10 text-emerald-600 rounded-2xl text-[10px] font-black uppercase border border-emerald-500/20 shadow-sm flex items-center gap-2"><Key size={12}/> Biometrics Verified</span>
@@ -166,7 +160,7 @@ const Settings: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {staff.map((s) => (
+                {staff.map((s: any) => (
                   <StaffNodeCard key={s.id} staff={s} onDelete={() => deleteStaffNode(s.id)} />
                 ))}
               </div>
@@ -183,11 +177,11 @@ const Settings: React.FC = () => {
                     <SystemToggle label="Mobile Node Sync" desc="Authorize high-fidelity real-time sync for mobile agents." active={true} />
                  </div>
                  <div className="mt-12 p-10 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-center gap-10 text-left">
-                    <ShieldAlert className="text-red-500 shrink-0" size={48} />
+                    <Database className="text-red-500 shrink-0" size={48} />
                     <div>
-                       <h5 className="text-base font-black text-red-600 uppercase tracking-widest">Emergency Perimeter Purge</h5>
-                       <p className="text-xs text-red-400 font-bold mt-2 leading-relaxed italic">Executing this command will disconnect all active staff nodes immediately and reset token keys. Use only in event of a credential breach.</p>
-                       <button className="mt-8 px-10 py-4 bg-red-600 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-lg shadow-red-600/30 hover:bg-red-700 hover:scale-[1.02] transition-all">Authorize Purge</button>
+                       <h5 className="text-base font-black text-red-600 uppercase tracking-widest">Master Database Sync</h5>
+                       <p className="text-xs text-red-400 font-bold mt-2 leading-relaxed italic">Wipe all local persistent nodes and reset to TOTO production defaults. This will log you out immediately.</p>
+                       <button onClick={resetDatabase} className="mt-8 px-10 py-4 bg-red-600 text-white rounded-[1.5rem] font-black uppercase text-[10px] tracking-widest shadow-lg shadow-red-600/30 hover:bg-red-700 hover:scale-[1.02] transition-all">Authorize Node Reset</button>
                     </div>
                  </div>
               </HubSection>
