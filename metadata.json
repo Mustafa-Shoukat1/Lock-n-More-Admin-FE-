@@ -1,8 +1,9 @@
 {
   "name": "TOTO | AI Sales Hub",
-  "description": "A world-class centralized AI messaging platform for WhatsApp, Shopify, and social channels.",
+  "description": "Production-grade centralized AI messaging platform for WhatsApp, Shopify, and omnichannel commerce signals.",
   "requestFramePermissions": [
     "camera",
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }

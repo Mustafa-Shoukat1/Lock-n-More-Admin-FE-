@@ -1,10 +1,12 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis
 } from 'recharts';
 import { DollarSign, Activity, Target, Zap, MessageSquare, Smartphone, BarChart3, Calendar, ArrowUpRight, AlertCircle } from 'lucide-react';
 import { useApp } from '../App';
-import { useNavigate } from 'react-router-dom';
+// Fix: Use useNavigate from 'react-router' to resolve missing export linter errors.
+import { useNavigate } from 'react-router';
 
 const Dashboard: React.FC = () => {
   const { conversations, orders, simulateLead } = useApp();

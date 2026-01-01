@@ -1,4 +1,6 @@
+
 import React from 'react';
+// Fix: Import NavLink from 'react-router-dom' explicitly to resolve export linter errors.
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 

@@ -1,7 +1,9 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Search, ChevronDown, Moon, Sun, LogOut, Settings, Users, Camera, X, MessageCircle, AlertCircle, RefreshCw, Menu, ShieldCheck, Zap } from 'lucide-react';
 import { useApp } from '../App';
-import { useNavigate } from 'react-router-dom';
+// Fix: Import useNavigate from 'react-router' to resolve export issues in specific environments.
+import { useNavigate } from 'react-router';
 
 const Header: React.FC = () => {
   const { lang, t, searchQuery, setSearchQuery, activeUser, setActiveUser, notifications, setNotifications, setSidebarOpen } = useApp();

@@ -1,6 +1,8 @@
 
-import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import React, { useState, createContext, useContext, useEffect } from 'react';
+// Fix: Split routing imports between 'react-router' and 'react-router-dom' to resolve linter errors regarding missing exports.
+import { HashRouter as Router } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
@@ -8,13 +10,11 @@ import Inbox from './pages/Inbox';
 import AIManager from './pages/AIManager';
 import Products from './pages/Products';
 import Settings from './pages/Settings';
-import UserManagement from './pages/UserManagement';
 import Analytics from './pages/Analytics';
 import Documentation from './pages/Documentation';
 import Orders from './pages/Orders';
 import { Language, Product, Conversation, User as UserType, AiSettings, Message } from './types';
 import { translations } from './i18n';
-import { LayoutDashboard, MessageSquare, Package, BookOpen, ShoppingCart } from 'lucide-react';
 
 const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
 
@@ -73,7 +73,7 @@ const App: React.FC = () => {
     name: 'Mustafa Shoukat', 
     role: 'Super Admin', 
     id: 'admin1',
-    email: 'admin@locksnmore.com',
+    email: 'mustafa@locksnmore.com',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100'
   });
   
@@ -85,7 +85,7 @@ const App: React.FC = () => {
   });
 
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'High Priority Lead', message: 'Beh Chen is asking about biometric locks.', type: 'lead', time: '2m ago', read: false },
+    { id: 1, title: 'Priority Signal', message: 'Beh Chen is asking about smart locks.', type: 'lead', time: '2m ago', read: false },
   ]);
 
   const [products, setProducts] = useState<Product[]>([
@@ -93,35 +93,48 @@ const App: React.FC = () => {
   ]);
 
   const [conversations, setConversations] = useState<Conversation[]>([
-    { id: '1', customerName: 'Beh Chen', customerPhone: '+60 12-345 6789', platform: 'whatsapp', lastMessage: 'Biometric locks for sliding doors?', lastTimestamp: '10:42 AM', unreadCount: 2, isHumanTakeover: false, priority: 'high', status: 'active', messages: [
-      { id: 'm1', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
-    ] },
+    { 
+      id: '1', 
+      customerName: 'Beh Chen', 
+      customerPhone: '+60 12-345 6789', 
+      platform: 'whatsapp', 
+      lastMessage: 'Biometric locks for sliding doors?', 
+      lastTimestamp: '10:42 AM', 
+      unreadCount: 2, 
+      isHumanTakeover: false, 
+      priority: 'high', 
+      status: 'active', 
+      messages: [
+        { id: 'm1', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
+      ] 
+    },
+    { 
+      id: '2', 
+      customerName: 'Sarah Lim', 
+      customerPhone: '+60 11-234 5678', 
+      platform: 'instagram', 
+      lastMessage: 'Price for A100 Pro?', 
+      lastTimestamp: '09:15 AM', 
+      unreadCount: 0, 
+      isHumanTakeover: true, 
+      assignedStaff: 'Agent Sarah',
+      priority: 'medium', 
+      status: 'active', 
+      messages: [
+        { id: 'm2', sender: 'customer', text: 'Price for A100 Pro?', timestamp: '09:15 AM', type: 'text' },
+      ] 
+    },
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
-    { id: 'staff1', name: 'Mustafa S.', email: 'admin@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
+    { id: 'staff1', name: 'Mustafa Shoukat', email: 'mustafa@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
     { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+    { id: 'staff3', name: 'Agent Daniel', email: 'daniel@locksnmore.com', role: 'agent', active: false, lastLogin: '2d ago', avatar: 'https://i.pravatar.cc/150?u=daniel' },
   ]);
 
-  const [orders, setOrders] = useState<Order[]>([]);
-
-  // Simulation: Progressively mark staff/ai messages as Delivered and then Read
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setConversations(prev => prev.map(conv => ({
-        ...conv,
-        messages: conv.messages.map(msg => {
-          if (msg.sender !== 'customer' && msg.status !== 'read') {
-            const nextStatus = msg.status === 'sent' ? 'delivered' : 'read';
-            // Random chance to progress status
-            return Math.random() > 0.7 ? { ...msg, status: nextStatus as any } : msg;
-          }
-          return msg;
-        })
-      })));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const [orders, setOrders] = useState<Order[]>([
+    { id: '#TOTO-5501', customer: 'Beh Chen', status: 'processing', amount: 1299.00, date: 'Today', platform: 'whatsapp' },
+  ]);
 
   const playNotificationSound = () => {
     const audio = new Audio(NOTIFICATION_SOUND_URL);
@@ -136,6 +149,7 @@ const App: React.FC = () => {
     setConversations(prev => prev.map(c => {
       if (c.id === convId) {
         const isResponse = sender === 'staff' || sender === 'ai';
+        // KPI tracking: Record the first response time after an assignment
         const firstResponseAt = isResponse && !c.firstResponseAt ? now.toISOString() : c.firstResponseAt;
         
         return {
@@ -178,9 +192,10 @@ const App: React.FC = () => {
   };
 
   const generateInvoice = (convId: string, amount: number) => {
-    const id = `#TOTO-${Date.now().toString().slice(-6)}`;
-    setOrders(prev => [{ id, customer: 'Customer', status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...prev]);
-    sendMessage(convId, `Order ID ${id} generated! Please authorize payment: https://checkout.toto.com/${id}`, 'staff');
+    const id = `#TOTO-${Date.now().toString().slice(-4)}`;
+    const customer = conversations.find(c => c.id === convId)?.customerName || 'Customer';
+    setOrders(prev => [{ id, customer, status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...prev]);
+    sendMessage(convId, `Invoice ${id} generated for RM ${amount}. Pay via Link: https://toto.link/pay/${id}`, 'staff');
   };
 
   const simulateLead = () => {
@@ -202,7 +217,7 @@ const App: React.FC = () => {
     playNotificationSound();
     setNotifications(prev => [{
       id: Date.now(),
-      title: 'New High Priority Signal',
+      title: 'New High Priority Lead',
       message: 'Aisha Malik is inquiring about A100 Pro.',
       type: 'lead',
       time: 'Just now',
@@ -233,7 +248,6 @@ const App: React.FC = () => {
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/ai-manager" element={<AIManager />} />
                 <Route path="/products" element={<Products />} />
-                <Route path="/users" element={<UserManagement />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/docs" element={<Documentation />} />
               </Routes>
