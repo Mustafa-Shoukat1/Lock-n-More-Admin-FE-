@@ -1,6 +1,5 @@
 
 import React, { useState, createContext, useContext, useEffect } from 'react';
-// Fix: Split routing imports between 'react-router' and 'react-router-dom' to resolve linter errors regarding missing exports.
 import { HashRouter as Router } from 'react-router-dom';
 import { Routes, Route, Navigate } from 'react-router';
 import Sidebar from './components/Sidebar';
@@ -89,7 +88,8 @@ const App: React.FC = () => {
   ]);
 
   const [products, setProducts] = useState<Product[]>([
-    { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200' },
+    { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 156 },
+    { id: '2', name: 'FaceID Gate Lock X2', price: 2499.00, stock: 12, category: 'Gate Locks', sku: 'GL-X2', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 89 },
   ]);
 
   const [conversations, setConversations] = useState<Conversation[]>([
@@ -104,9 +104,8 @@ const App: React.FC = () => {
       isHumanTakeover: false, 
       priority: 'high', 
       status: 'active', 
-      messages: [
-        { id: 'm1', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
-      ] 
+      dealStatus: 'open',
+      messages: [{ id: 'm1', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' }] 
     },
     { 
       id: '2', 
@@ -120,20 +119,19 @@ const App: React.FC = () => {
       assignedStaff: 'Agent Sarah',
       priority: 'medium', 
       status: 'active', 
-      messages: [
-        { id: 'm2', sender: 'customer', text: 'Price for A100 Pro?', timestamp: '09:15 AM', type: 'text' },
-      ] 
+      dealStatus: 'won',
+      messages: [{ id: 'm2', sender: 'customer', text: 'Price for A100 Pro?', timestamp: '09:15 AM', type: 'text' }] 
     },
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
     { id: 'staff1', name: 'Mustafa Shoukat', email: 'mustafa@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
     { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
-    { id: 'staff3', name: 'Agent Daniel', email: 'daniel@locksnmore.com', role: 'agent', active: false, lastLogin: '2d ago', avatar: 'https://i.pravatar.cc/150?u=daniel' },
   ]);
 
   const [orders, setOrders] = useState<Order[]>([
     { id: '#TOTO-5501', customer: 'Beh Chen', status: 'processing', amount: 1299.00, date: 'Today', platform: 'whatsapp' },
+    { id: '#TOTO-5502', customer: 'Sarah Lim', status: 'fulfilled', amount: 2499.00, date: 'Yesterday', platform: 'instagram' },
   ]);
 
   const playNotificationSound = () => {
@@ -145,84 +143,38 @@ const App: React.FC = () => {
   const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
     const now = new Date();
     const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    setConversations(prev => prev.map(c => {
-      if (c.id === convId) {
-        const isResponse = sender === 'staff' || sender === 'ai';
-        // KPI tracking: Record the first response time after an assignment
-        const firstResponseAt = isResponse && !c.firstResponseAt ? now.toISOString() : c.firstResponseAt;
-        
-        return {
-          ...c,
-          messages: [...c.messages, { 
-            id: Math.random().toString(36).substr(2, 9), 
-            sender, 
-            text, 
-            timestamp, 
-            type, 
-            mediaUrl, 
-            status: isResponse ? 'sent' : undefined 
-          }],
-          lastMessage: type === 'voice' ? 'Voice Message' : text,
-          lastTimestamp: timestamp,
-          unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0,
-          firstResponseAt
-        };
-      }
-      return c;
-    }));
+    setConversations(prev => prev.map(c => c.id === convId ? {
+      ...c,
+      messages: [...c.messages, { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, mediaUrl, status: sender === 'customer' ? undefined : 'read' }],
+      lastMessage: type === 'voice' ? 'Voice Message' : text,
+      lastTimestamp: timestamp,
+      unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0,
+      firstResponseAt: (sender === 'staff' || sender === 'ai') && !c.firstResponseAt ? now.toISOString() : c.firstResponseAt
+    } : c));
   };
 
   const assignStaff = (convId: string, staffName: string) => {
-    setConversations(prev => prev.map(c => 
-      c.id === convId ? { 
-        ...c, 
-        assignedStaff: staffName, 
-        assignedAt: new Date().toISOString(), 
-        isHumanTakeover: true,
-        isOpenedByStaff: false 
-      } : c
-    ));
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, assignedStaff: staffName, assignedAt: new Date().toISOString(), isHumanTakeover: true } : c));
   };
 
   const markAsOpened = (convId: string) => {
-    setConversations(prev => prev.map(c => 
-      c.id === convId ? { ...c, isOpenedByStaff: true, unreadCount: 0 } : c
-    ));
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, isOpenedByStaff: true, unreadCount: 0 } : c));
   };
 
   const generateInvoice = (convId: string, amount: number) => {
     const id = `#TOTO-${Date.now().toString().slice(-4)}`;
     const customer = conversations.find(c => c.id === convId)?.customerName || 'Customer';
     setOrders(prev => [{ id, customer, status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...prev]);
-    sendMessage(convId, `Invoice ${id} generated for RM ${amount}. Pay via Link: https://toto.link/pay/${id}`, 'staff');
+    sendMessage(convId, `Invoice ${id} for RM ${amount} generated.`, 'staff');
   };
 
   const simulateLead = () => {
     const id = Date.now().toString();
     const newConv: Conversation = {
-      id,
-      customerName: 'Aisha Malik',
-      customerPhone: '+6011-2233 4455',
-      platform: 'whatsapp',
-      lastMessage: 'Interested in the A100 Pro model.',
-      lastTimestamp: 'Just Now',
-      unreadCount: 1,
-      isHumanTakeover: false,
-      priority: 'high',
-      status: 'active',
-      messages: [{ id: 'm' + Date.now(), sender: 'customer', text: 'Interested in the A100 Pro model.', timestamp: 'Just Now', type: 'text' }]
+      id, customerName: 'New Lead', customerPhone: '+6011-0000 0000', platform: 'whatsapp', lastMessage: 'Inquiry', lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', messages: [{ id: 'm'+id, sender: 'customer', text: 'I need a lock.', timestamp: 'Just Now', type: 'text' }]
     };
     setConversations(prev => [newConv, ...prev]);
     playNotificationSound();
-    setNotifications(prev => [{
-      id: Date.now(),
-      title: 'New High Priority Lead',
-      message: 'Aisha Malik is inquiring about A100 Pro.',
-      type: 'lead',
-      time: 'Just now',
-      read: false
-    }, ...prev]);
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;

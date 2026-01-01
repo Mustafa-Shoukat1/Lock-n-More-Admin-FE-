@@ -24,10 +24,11 @@ export interface Conversation {
   isHumanTakeover: boolean;
   priority: 'low' | 'medium' | 'high';
   assignedStaff?: string;
-  assignedAt?: string; // ISO Timestamp for tracking
-  firstResponseAt?: string; // ISO Timestamp for tracking
+  assignedAt?: string; 
+  firstResponseAt?: string; 
   isOpenedByStaff?: boolean;
   status: 'active' | 'pending' | 'closed';
+  dealStatus?: 'won' | 'lost' | 'open'; // Added for closing analysis
   messages: Message[];
 }
 
@@ -39,6 +40,7 @@ export interface Product {
   stock: number;
   category: string;
   sku: string;
+  salesCount?: number; // Added for product analysis
 }
 
 export interface User {
@@ -54,6 +56,6 @@ export interface User {
 export interface AiSettings {
   personality: 'professional' | 'helpful' | 'aggressive' | 'passive';
   tone: 'formal' | 'casual' | 'urgent' | 'empathetic';
-  responseLength: number; // 0-100
-  creativity: number; // 0-100
+  responseLength: number;
+  creativity: number;
 }
