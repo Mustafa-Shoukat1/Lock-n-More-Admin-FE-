@@ -75,7 +75,8 @@ interface AppContextType {
   toggleAi: (convId: string) => void;
   markAsOpened: (convId: string) => void;
   generateInvoice: (convId: string, amount: number) => void;
-  simulateLead: () => void;
+  simulateLead: (isSilent?: boolean) => void;
+  stressTest: () => void;
   syncCatalog: () => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -107,10 +108,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeUser, setActiveUserInternal] = useState<UserType | null>(isLoggedIn ? data.staff[0] : null);
   const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Priority Signal', message: 'Beh Chen is asking about smart locks.', type: 'lead', time: '2m ago', read: false },
-    { id: 2, title: 'Security Alert', message: 'Node Alpha connected.', type: 'system', time: '1h ago', read: false },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const dataRef = useRef(data);
   useEffect(() => { dataRef.current = data; }, [data]);
@@ -122,7 +120,7 @@ const App: React.FC = () => {
       message,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
-    setSystemLogs(prev => [newLog, ...prev].slice(0, 50));
+    setSystemLogs(prev => [newLog, ...prev].slice(0, 100));
   };
 
   const updateData = (updates: Partial<typeof data>) => {
@@ -143,15 +141,15 @@ const App: React.FC = () => {
   const setActiveUser = (u: UserType | null) => {
     setActiveUserInternal(u);
     if (u) {
-      addLog('info', `User ${u.name} initialized session.`);
+      addLog('info', `Identity node ${u.name} successfully authenticated.`);
       const updatedStaff = data.staff.map(s => s.id === u.id ? { ...s, lastLogin: 'Active Now' } : s);
       updateData({ staff: updatedStaff });
     }
   };
 
   const resetDatabase = () => {
-    if (confirm("Permanently wipe local perimeter data and reset to production defaults?")) {
-      addLog('warning', 'Hard system reset initiated.');
+    if (confirm("Authorize full perimeter reset? All persistent nodes will be wiped.")) {
+      addLog('warning', 'Master reset signal dispatched. Local storage cleared.');
       const fresh = db.reset();
       setData(fresh);
       window.location.reload();
@@ -160,14 +158,11 @@ const App: React.FC = () => {
 
   useEffect(() => { localStorage.setItem('isLoggedIn', isLoggedIn.toString()); }, [isLoggedIn]);
 
-  // Automated Lead Simulation Loop (Heartbeat)
   useEffect(() => {
     if (!isLoggedIn) return;
     const interval = setInterval(() => {
-      if (Math.random() > 0.65) {
-        simulateLead();
-      }
-    }, 35000);
+      if (Math.random() > 0.7) simulateLead();
+    }, 45000);
     return () => clearInterval(interval);
   }, [isLoggedIn]);
 
@@ -201,39 +196,26 @@ const App: React.FC = () => {
       return next;
     });
 
-    if (sender === 'ai') addLog('ai', `AI Node responded to conversation ${convId}.`);
-    else if (sender === 'staff') addLog('info', `Agent signal dispatched to ${convId}.`);
+    if (sender === 'ai') addLog('ai', `AI Synthesis node responded to conversation ${convId}.`);
+    else if (sender === 'staff') addLog('info', `Manual signal released to node ${convId}.`);
   };
 
   const handleAiAutoReply = async (conv: Conversation, query: string) => {
     try {
-      addLog('ai', `AI synthesizing response for ${conv.platform} lead: ${conv.customerName}...`);
-      // Simulate real thinking time
+      addLog('ai', `Gemini 3 Flash analyzing ${conv.platform} signal: "${query.substring(0, 15)}..."`);
       setTimeout(async () => {
         const history = conv.messages.map(m => `${m.sender}: ${m.text}`).join('\n');
-        const context = `Conversation with ${conv.customerName} on ${conv.platform}. Current history:\n${history}`;
-        const suggestion = await gemini.getAiResponseSuggestion(context, query, dataRef.current.aiSettings);
+        const suggestion = await gemini.getAiResponseSuggestion(`Platform: ${conv.platform}\nHistory:\n${history}`, query, dataRef.current.aiSettings);
         sendMessage(conv.id, suggestion, 'ai');
-      }, 3000);
+      }, 2000);
     } catch (e) {
-      addLog('error', 'AI Neural Core failed to process signal.');
+      addLog('error', 'Neural Core Exception: AI failed to synthesize response.');
     }
   };
 
   const assignStaff = (convId: string, staffName: string) => {
-    const conv = data.conversations.find(c => c.id === convId);
-    setConversations(data.conversations.map(c => c.id === convId ? { ...c, assignedStaff: staffName, assignedAt: new Date().toISOString(), isHumanTakeover: true, aiEnabled: false } : c));
-    
-    setNotifications(prev => [{
-      id: Date.now(),
-      title: 'Action Required',
-      message: `Conversation with ${conv?.customerName || 'Customer'} assigned to ${staffName}.`,
-      type: 'lead',
-      time: 'Just Now',
-      read: false
-    }, ...prev]);
-    
-    addLog('success', `Assigned ${staffName} to node ${convId}.`);
+    setConversations(data.conversations.map(c => c.id === convId ? { ...c, assignedStaff: staffName, isHumanTakeover: true, aiEnabled: false } : c));
+    addLog('success', `Perimeter node ${convId} assigned to ${staffName}.`);
     playNotificationSound();
   };
 
@@ -241,7 +223,7 @@ const App: React.FC = () => {
     const currentConv = data.conversations.find(c => c.id === convId);
     const newState = !currentConv?.aiEnabled;
     setConversations(data.conversations.map(c => c.id === convId ? { ...c, aiEnabled: newState, isHumanTakeover: !newState } : c));
-    addLog('ai', `AI Mode ${newState ? 'Activated' : 'Suspended'} for node ${convId}.`);
+    addLog('ai', `Cognitive Hub ${newState ? 'Enabled' : 'Disabled'} for node ${convId}.`);
   };
 
   const markAsOpened = (convId: string) => {
@@ -250,64 +232,58 @@ const App: React.FC = () => {
 
   const generateInvoice = (convId: string, amount: number) => {
     const id = `#TOTO-${Date.now().toString().slice(-4)}`;
-    const customer = data.conversations.find(c => c.id === convId)?.customerName || 'Customer';
-    setOrders([{ id, customer, status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...data.orders]);
-    sendMessage(convId, `Invoice ${id} for RM ${amount} generated.`, 'staff');
-    addLog('success', `Settlement Node deployed: Invoice ${id} for RM ${amount}.`);
+    setOrders([{ id, customer: data.conversations.find(c => c.id === convId)?.customerName || 'Customer', status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...data.orders]);
+    sendMessage(convId, `Invoice ${id} for RM ${amount} issued.`, 'staff');
+    addLog('success', `Financial Node initialized: Invoice ${id}.`);
   };
 
-  const simulateLead = () => {
+  const simulateLead = (isSilent = false) => {
     const { whatsappEnabled, instagramEnabled, tiktokEnabled } = dataRef.current.integrationSettings;
     const availablePlatforms: Platform[] = [];
     if (whatsappEnabled) availablePlatforms.push('whatsapp');
     if (instagramEnabled) availablePlatforms.push('instagram');
     if (tiktokEnabled) availablePlatforms.push('tiktok');
-
     if (availablePlatforms.length === 0) return;
 
     const platform = availablePlatforms[Math.floor(Math.random() * availablePlatforms.length)];
-    
-    const messagesByPlatform = {
-      whatsapp: ["How much for the A100 Pro?", "Is installation included?", "Do you ship to Penang?", "I need a quote for 5 units."],
-      instagram: ["Love this lock! Price?", "Is the X2 available in black?", "Showroom location please.", "Check DM!"],
-      tiktok: ["Need this for my airbnb!", "Price please?", "Is this biometric only?", "Wow, so convenient!"]
-    };
-
-    const names = ["Ahmad Fauzi", "Jenny Tan", "Siva Kumar", "Lim Wei", "Syed Kamal", "Wong YM", "Zul IG", "Sarah Lim", "TikTok Fan"];
-    
-    const id = Date.now().toString();
-    const query = messagesByPlatform[platform][Math.floor(Math.random() * messagesByPlatform[platform].length)];
+    const names = ["Mohd Hafiz", "Siew Ling", "Ravi Shankar", "Evelyn Tan", "Zul Ariffin", "Kimmy IG", "TikTok User 44"];
     const name = names[Math.floor(Math.random() * names.length)];
-    
+    const id = Date.now().toString();
+    const queries = ["Price for A100?", "Is installation available in KL?", "Warranty for gate locks?", "Promo for new users?"];
+    const query = queries[Math.floor(Math.random() * queries.length)];
+
     const newConv: Conversation = {
-      id, 
-      customerName: name, 
-      customerPhone: platform === 'whatsapp' ? `+601${Math.floor(Math.random()*90000000+10000000)}` : `@${name.toLowerCase().replace(' ', '_')}`, 
-      platform, 
-      lastMessage: query, 
-      lastTimestamp: 'Just Now', 
-      unreadCount: 1, 
-      isHumanTakeover: false, 
-      priority: 'high', 
-      status: 'active', 
-      aiEnabled: true,
+      id, customerName: name, customerPhone: platform === 'whatsapp' ? '+6012-XXX-XXXX' : `@${name.toLowerCase().replace(' ', '_')}`, 
+      platform, lastMessage: query, lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', aiEnabled: true,
       messages: [{ id: 'm'+id, sender: 'customer', text: query, timestamp: 'Just Now', type: 'text' }]
     };
     
     setConversations([newConv, ...dataRef.current.conversations]);
-    playNotificationSound();
-    addLog('warning', `New ${platform.toUpperCase()} lead: ${name} initiated a signal.`);
-    setNotifications(prev => [{ id: Date.now(), title: 'Lead Signal', message: `New ${platform} lead: ${name}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
+    if (!isSilent) {
+      playNotificationSound();
+      addLog('warning', `New ${platform.toUpperCase()} lead captured: ${name}.`);
+      setNotifications(prev => [{ id: Date.now(), title: 'Incoming Signal', message: `${platform}: ${name}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
+    }
+  };
+
+  const stressTest = () => {
+    addLog('error', 'System Stress Test initiated. Burst signal injection active.');
+    for(let i=0; i<5; i++) {
+      setTimeout(() => simulateLead(true), i * 300);
+    }
   };
 
   const syncCatalog = () => {
-    const updatedProducts = data.products.map(p => ({
-      ...p,
-      stock: Math.floor(Math.random() * 60),
-      price: p.price + (Math.random() > 0.9 ? (Math.random() * 40 - 20) : 0)
-    }));
-    setProducts(updatedProducts);
-    addLog('success', 'Master Commerce Catalog synchronized.');
+    addLog('info', 'Shopify Master Catalog synchronization in progress...');
+    setTimeout(() => {
+      const updatedProducts = data.products.map(p => ({
+        ...p,
+        stock: Math.floor(Math.random() * 50),
+        price: p.price + (Math.random() > 0.8 ? (Math.random() * 20 - 10) : 0)
+      }));
+      setProducts(updatedProducts);
+      addLog('success', 'Commerce Node synchronized. Inventory verified.');
+    }, 1500);
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
@@ -318,7 +294,7 @@ const App: React.FC = () => {
       notifications, setNotifications, products: data.products, setProducts, conversations: data.conversations, setConversations,
       staff: data.staff, setStaff, orders: data.orders, setOrders, aiSettings: data.aiSettings, setAiSettings, 
       integrationSettings: data.integrationSettings, setIntegrationSettings,
-      systemLogs, addLog, sendMessage, assignStaff, toggleAi, markAsOpened, generateInvoice, simulateLead, syncCatalog,
+      systemLogs, addLog, sendMessage, assignStaff, toggleAi, markAsOpened, generateInvoice, simulateLead, stressTest, syncCatalog,
       isSidebarOpen, setSidebarOpen, playNotificationSound, resetDatabase
     }}>
       <Router>
