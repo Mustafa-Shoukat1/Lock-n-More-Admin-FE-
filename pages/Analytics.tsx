@@ -1,14 +1,16 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line, Legend, ScatterChart, Scatter, ZAxis
+  CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line, Legend, ScatterChart, Scatter, ZAxis, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
-import { TrendingUp, MessageSquare, ShoppingCart, Target, Users, Zap, Clock, ExternalLink, Globe, LayoutList, PieChart as PieChartIcon, Calendar, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, Smartphone, TrendingDown, Heart, ShieldAlert, Sparkles, BrainCircuit, Info, ChevronRight, RefreshCw } from 'lucide-react';
+// Added AlertCircle to the imports from lucide-react to fix "Cannot find name 'AlertCircle'"
+import { TrendingUp, MessageSquare, ShoppingCart, Target, Users, Zap, Clock, ExternalLink, Globe, LayoutList, PieChart as PieChartIcon, Calendar, ArrowUpRight, ArrowDownRight, Activity, MousePointer2, Smartphone, TrendingDown, Heart, ShieldAlert, Sparkles, BrainCircuit, Info, ChevronRight, RefreshCw, UserCheck, Timer, BarChart3, AlertCircle } from 'lucide-react';
 import { useApp } from '../App';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
 import { gemini } from '../services/gemini';
 
 const Analytics: React.FC = () => {
-  const { t } = useApp();
+  const { t, staff } = useApp();
   const [reportRange, setReportRange] = useState('7'); // days
   const [activeMetric, setActiveMetric] = useState('revenue');
   const [aiInsight, setAiInsight] = useState<string | null>(null);
@@ -34,16 +36,22 @@ const Analytics: React.FC = () => {
     }));
   }, []);
 
+  // Performance data for staff members
+  const staffPerformance = useMemo(() => {
+    return staff.map(s => ({
+      name: s.name,
+      openRate: s.role === 'super_admin' ? 98 : Math.floor(Math.random() * 30) + 65,
+      responseTime: s.role === 'super_admin' ? '2m' : `${Math.floor(Math.random() * 120) + 10}m`,
+      responseTimeRaw: s.role === 'super_admin' ? 2 : Math.floor(Math.random() * 120) + 10,
+      efficiency: Math.floor(Math.random() * 20) + 80,
+      avatar: s.avatar
+    }));
+  }, [staff]);
+
   const platformEngagement = [
     { name: 'WhatsApp', value: 450, color: '#25D366' },
     { name: 'Instagram', value: 280, color: '#DD2A7B' },
     { name: 'TikTok', value: 190, color: '#000000' },
-  ];
-
-  const sentimentMix = [
-    { name: 'Positive', value: 68, color: '#10B981' },
-    { name: 'Neutral', value: 22, color: '#94A3B8' },
-    { name: 'Negative', value: 10, color: '#EF4444' },
   ];
 
   const fetchStrategicInsight = async () => {
@@ -159,6 +167,69 @@ const Analytics: React.FC = () => {
                   <Line type="monotone" dataKey={activeMetric} stroke="#2563EB" strokeWidth={5} dot={{ r: 6, fill: '#2563EB', strokeWidth: 3, stroke: '#fff' }} animationDuration={1500} />
                 </ComposedChart>
               </ResponsiveContainer>
+            </div>
+          </ChartHub>
+
+          {/* STAFF PERFORMANCE PERIMETER */}
+          <ChartHub title="Staff Performance Perimeter" subtitle="Individual agent velocity & open metrics" icon={<UserCheck />}>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+               <div className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={staffPerformance} layout="vertical" margin={{ left: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.1} />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '800'}} />
+                      <Tooltip 
+                         cursor={{fill: 'transparent'}}
+                         contentStyle={{ backgroundColor: '#0F172A', border: 'none', borderRadius: '16px' }}
+                         itemStyle={{ color: '#fff', fontSize: '10px' }}
+                      />
+                      <Bar dataKey="openRate" name="Open Rate %" fill="#2563EB" radius={[0, 10, 10, 0]} barSize={24} />
+                      <Bar dataKey="responseTimeRaw" name="Response Time (m)" fill="#F59E0B" radius={[0, 10, 10, 0]} barSize={24} />
+                    </BarChart>
+                  </ResponsiveContainer>
+               </div>
+
+               <div className="space-y-4">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                     <table className="w-full text-left">
+                        <thead>
+                           <tr className="border-b border-slate-200 dark:border-slate-800">
+                              <th className="pb-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Node Agent</th>
+                              <th className="pb-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-center">Open Rate</th>
+                              <th className="pb-4 text-[9px] font-black uppercase text-slate-400 tracking-widest text-right">Avg Response</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                           {staffPerformance.map(agent => (
+                              <tr key={agent.name} className="group">
+                                 <td className="py-4">
+                                    <div className="flex items-center gap-3">
+                                       <img src={agent.avatar} className="w-8 h-8 rounded-lg object-cover" />
+                                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{agent.name}</span>
+                                    </div>
+                                 </td>
+                                 <td className="py-4 text-center">
+                                    <span className={`text-xs font-black font-outfit ${agent.openRate > 85 ? 'text-emerald-500' : 'text-amber-500'}`}>{agent.openRate}%</span>
+                                 </td>
+                                 <td className="py-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                       <Timer size={12} className={agent.responseTimeRaw > 60 ? 'text-red-500' : 'text-slate-400'} />
+                                       <span className={`text-xs font-black font-outfit ${agent.responseTimeRaw > 60 ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}>{agent.responseTime}</span>
+                                    </div>
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+                  <div className="p-4 bg-brand/5 rounded-2xl border border-brand/10 flex items-start gap-3">
+                     <AlertCircle size={14} className="text-brand mt-0.5" />
+                     <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
+                        <strong className="text-brand uppercase">Audit Alert:</strong> System detected response latency above 60m for non-admin nodes. Recommend re-assigning high-priority signals.
+                     </p>
+                  </div>
+               </div>
             </div>
           </ChartHub>
 
