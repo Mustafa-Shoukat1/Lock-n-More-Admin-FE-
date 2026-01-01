@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronLeft, MessageSquare, Zap, UserCheck, Send, CheckCheck, Check, X, Box, Mic, Square, CreditCard, Sparkles, RefreshCw, Play, UserPlus, Info, Phone, MoreVertical } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Zap, UserCheck, Send, CheckCheck, Check, X, Box, Mic, Square, CreditCard, Sparkles, RefreshCw, Play, UserPlus, Info, Phone, MoreVertical, Circle } from 'lucide-react';
 import { WhatsAppIcon, InstagramIcon } from '../components/Icons';
 import { useApp } from '../App';
 import { Platform } from '../types';
@@ -52,7 +52,16 @@ const Inbox: React.FC = () => {
   const stopRecording = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsRecording(false);
-    if (selectedId && recordingTime > 0) sendMessage(selectedId, `Voice Message (${recordingTime}s)`, 'staff', 'voice');
+    if (selectedId && recordingTime > 0) {
+      sendMessage(selectedId, `Voice Message (${recordingTime}s)`, 'staff', 'voice');
+    }
+    setRecordingTime(0);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -99,7 +108,7 @@ const Inbox: React.FC = () => {
               <div className="flex items-center gap-3 min-w-0">
                 <button onClick={() => setSelectedId(null)} className="p-2 -ml-2 text-slate-500 md:hidden"><ChevronLeft size={24} /></button>
                 <div className="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-black text-sm">{activeChat?.customerName.charAt(0)}</div>
-                <div className="truncate">
+                <div className="truncate text-left">
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate leading-none">{activeChat?.customerName}</h3>
                   <p className="text-[10px] text-emerald-500 font-black uppercase mt-1.5 flex items-center gap-1">
                     {activeChat?.assignedStaff ? <UserCheck size={10}/> : <Zap size={10}/>}
@@ -121,12 +130,12 @@ const Inbox: React.FC = () => {
                     {msg.type === 'voice' ? (
                       <div className="flex items-center gap-3 py-1">
                         <button className="w-10 h-10 rounded-full bg-brand/10 text-brand flex items-center justify-center"><Play size={20} fill="currentColor"/></button>
-                        <div className="h-6 flex items-center gap-0.5 flex-1 min-w-[100px]">{[0.4, 0.7, 0.2, 0.9, 0.5, 0.3, 0.8].map((h, i) => <div key={i} className="flex-1 bg-slate-300 rounded-full" style={{height: `${h*100}%`}}></div>)}</div>
+                        <div className="h-6 flex items-center gap-0.5 flex-1 min-w-[150px]">{[0.4, 0.7, 0.2, 0.9, 0.5, 0.3, 0.8, 0.4, 0.6].map((h, i) => <div key={i} className="flex-1 bg-slate-300 rounded-full" style={{height: `${h*100}%`}}></div>)}</div>
                       </div>
-                    ) : <p className="text-sm font-medium leading-relaxed">{msg.text}</p>}
+                    ) : <p className="text-sm font-medium leading-relaxed text-left">{msg.text}</p>}
                     <div className="flex items-center justify-end gap-1 mt-1 text-[9px] text-slate-500 font-bold">
                       <span>{msg.timestamp}</span>
-                      {msg.sender !== 'customer' && <MessageStatus status={msg.status || 'read'} />}
+                      {msg.sender !== 'customer' && <MessageStatus status={msg.status || 'sent'} />}
                     </div>
                   </div>
                 </div>
@@ -137,17 +146,20 @@ const Inbox: React.FC = () => {
             <div className="p-3 bg-[#f0f2f5] dark:bg-slate-900 flex flex-col gap-2">
               {aiSuggestion && (
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-brand/20 flex justify-between items-center animate-in slide-in-from-bottom duration-300">
-                   <p className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2"><Sparkles size={14} className="text-brand"/> {aiSuggestion}</p>
+                   <p className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 text-left"><Sparkles size={14} className="text-brand"/> {aiSuggestion}</p>
                    <button onClick={() => {setInputText(aiSuggestion); setAiSuggestion(null);}} className="px-4 py-2 bg-brand text-white text-[10px] font-black uppercase rounded-xl">Use</button>
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <button onClick={() => setShowProductPicker(true)} className="p-2.5 text-slate-500 hover:text-brand"><Box size={24}/></button>
-                <div className="flex-1 bg-white dark:bg-slate-800 rounded-[1.5rem] px-4 flex items-center border border-transparent focus-within:border-brand/20">
+              <div className="flex items-center gap-2 h-14">
+                {!isRecording && <button onClick={() => setShowProductPicker(true)} className="p-2.5 text-slate-500 hover:text-brand"><Box size={24}/></button>}
+                <div className={`flex-1 bg-white dark:bg-slate-800 rounded-[1.5rem] px-4 flex items-center border border-transparent focus-within:border-brand/20 transition-all ${isRecording ? 'border-red-500/50 ring-2 ring-red-500/10' : ''}`}>
                   {isRecording ? (
                     <div className="flex-1 flex justify-between items-center text-xs font-bold text-red-500 py-3">
-                      <span className="animate-pulse flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div> Recording...</span>
-                      <span>{recordingTime}s</span>
+                      <div className="flex items-center gap-2">
+                        <Circle size={10} className="fill-red-500 animate-pulse" />
+                        <span className="uppercase tracking-widest">Recording Audio...</span>
+                      </div>
+                      <span className="font-mono text-sm">{formatTime(recordingTime)}</span>
                     </div>
                   ) : (
                     <input 
@@ -159,7 +171,7 @@ const Inbox: React.FC = () => {
                   )}
                 </div>
                 {inputText.trim() ? (
-                  <button onClick={handleSend} className="p-3 bg-brand text-white rounded-full shadow-lg"><Send size={20}/></button>
+                  <button onClick={handleSend} className="p-3 bg-brand text-white rounded-full shadow-lg hover:scale-105 transition-transform"><Send size={20}/></button>
                 ) : (
                   <button onClick={isRecording ? stopRecording : startRecording} className={`p-3 rounded-full transition-all ${isRecording ? 'bg-red-500 text-white shadow-xl scale-110' : 'text-slate-500 hover:text-brand'}`}>
                     {isRecording ? <Square size={20}/> : <Mic size={24}/>}
@@ -208,11 +220,9 @@ const Inbox: React.FC = () => {
 };
 
 const MessageStatus = ({ status }: { status: 'sent' | 'delivered' | 'read' }) => {
-  return (
-    <div className="flex items-center -space-x-1 scale-[0.85] ml-1">
-      {status === 'read' ? <CheckCheck size={14} className="text-blue-400" /> : <Check size={14} className="opacity-40" />}
-    </div>
-  );
+  if (status === 'sent') return <Check size={14} className="opacity-40" />;
+  if (status === 'read') return <CheckCheck size={14} className="text-blue-500" />;
+  return <CheckCheck size={14} className="opacity-40" />;
 };
 
 const FilterBtn = ({ active, onClick, icon, label }: any) => (

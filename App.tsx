@@ -93,6 +93,7 @@ const App: React.FC = () => {
     { id: '3', name: 'TOTO Padlock Lite', price: 199.00, stock: 0, category: 'Padlocks', sku: 'PL-LITE', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 240 },
   ]);
 
+  // Mock data for testing KPI Analysis
   const [conversations, setConversations] = useState<Conversation[]>([
     { 
       id: '1', 
@@ -118,13 +119,30 @@ const App: React.FC = () => {
       unreadCount: 0, 
       isHumanTakeover: true, 
       assignedStaff: 'Agent Sarah',
-      assignedAt: new Date(Date.now() - 3600000 * 6).toISOString(), // 6 hours ago
+      assignedAt: new Date(Date.now() - 3600000 * 8).toISOString(), // 8 hours ago (Delayed)
       firstResponseAt: new Date(Date.now() - 600000).toISOString(), // 10 mins ago
+      isOpenedByStaff: true,
       priority: 'medium', 
       status: 'active', 
       dealStatus: 'won',
       messages: [{ id: 'm2', sender: 'customer', text: 'Price for A100 Pro?', timestamp: '09:15 AM', type: 'text' }] 
     },
+    { 
+        id: '3', 
+        customerName: 'David Tan', 
+        customerPhone: '+60 17-999 0000', 
+        platform: 'whatsapp', 
+        lastMessage: 'Need help with installation.', 
+        lastTimestamp: '08:00 AM', 
+        unreadCount: 1, 
+        isHumanTakeover: true, 
+        assignedStaff: 'Mustafa Shoukat',
+        assignedAt: new Date(Date.now() - 1800000).toISOString(), // 30 mins ago
+        isOpenedByStaff: false,
+        priority: 'high', 
+        status: 'active', 
+        messages: [{ id: 'm3', sender: 'customer', text: 'Need help with installation.', timestamp: '08:00 AM', type: 'text' }] 
+      },
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
@@ -148,16 +166,32 @@ const App: React.FC = () => {
     const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setConversations(prev => prev.map(c => c.id === convId ? {
       ...c,
-      messages: [...c.messages, { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, mediaUrl, status: sender === 'customer' ? undefined : 'read' }],
+      messages: [...c.messages, { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, mediaUrl, status: sender === 'customer' ? undefined : 'sent' }],
       lastMessage: type === 'voice' ? 'Voice Message' : text,
       lastTimestamp: timestamp,
       unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0,
       firstResponseAt: (sender === 'staff' || sender === 'ai') && !c.firstResponseAt ? now.toISOString() : c.firstResponseAt
     } : c));
+    
+    // Auto-update message status to 'read' after 2s for realism in UI testing
+    if (sender !== 'customer') {
+      setTimeout(() => {
+        setConversations(prev => prev.map(c => c.id === convId ? {
+          ...c,
+          messages: c.messages.map(m => m.sender === sender ? { ...m, status: 'read' as const } : m)
+        } : c));
+      }, 2000);
+    }
   };
 
   const assignStaff = (convId: string, staffName: string) => {
-    setConversations(prev => prev.map(c => c.id === convId ? { ...c, assignedStaff: staffName, assignedAt: new Date().toISOString(), isHumanTakeover: true } : c));
+    setConversations(prev => prev.map(c => c.id === convId ? { 
+      ...c, 
+      assignedStaff: staffName, 
+      assignedAt: new Date().toISOString(), 
+      isHumanTakeover: true,
+      isOpenedByStaff: false 
+    } : c));
   };
 
   const markAsOpened = (convId: string) => {

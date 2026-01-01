@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Plus, RefreshCw, X, CloudSync, Edit2, CheckCircle2, ShoppingCart, Tag, BarChart, ChevronDown, CheckCircle, Package, Database, Table } from 'lucide-react';
+import { Search, Plus, RefreshCw, X, CloudSync, Edit2, CheckCircle2, ShoppingCart, Tag, BarChart, ChevronDown, CheckCircle, Package, Database, Table, Filter } from 'lucide-react';
 import { useApp } from '../App';
 import { Product } from '../types';
 
@@ -14,7 +14,7 @@ const Products: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
-  // Advanced Filter States
+  // Requirement: Advanced Filtering
   const [activeCategory, setActiveCategory] = useState('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'in' | 'out'>('all');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
@@ -35,7 +35,7 @@ const Products: React.FC = () => {
           clearInterval(interval);
           setIsSyncing(false);
           setNotifications(prev => [{ 
-            id: Date.now(), title: `${source.toUpperCase()} Synchronized`, message: `Inventory perimeter nodes updated successfully.`, type: 'system', time: 'Just now', read: false 
+            id: Date.now(), title: `${source.toUpperCase()} Synchronized`, message: `Inventory perimeter updated.`, type: 'system', time: 'Just now', read: false 
           }, ...prev]);
           return 100;
         }
@@ -44,7 +44,6 @@ const Products: React.FC = () => {
     }, 120);
   };
 
-  // Requirement: Multi-parameter filtering
   const filteredCatalog = useMemo(() => {
     return products.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
@@ -59,11 +58,11 @@ const Products: React.FC = () => {
 
   return (
     <div className="p-6 md:p-12 space-y-10 max-w-7xl mx-auto pb-32">
-      {/* Dynamic Header Node */}
-      <div className="bg-white dark:bg-slate-950 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 shadow-sm relative overflow-hidden">
-        <div className="space-y-3 relative z-10 text-left">
-          <h1 className="text-4xl font-bold font-outfit tracking-tighter uppercase">Inventory Perimeter</h1>
-          <p className="text-slate-500 font-medium">Manage e-commerce commerce nodes and SKU synchronization.</p>
+      {/* Header Node */}
+      <div className="bg-white dark:bg-slate-950 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 shadow-sm relative overflow-hidden text-left">
+        <div className="space-y-3 relative z-10">
+          <h1 className="text-4xl font-bold font-outfit tracking-tighter uppercase leading-none">Inventory Perimeter</h1>
+          <p className="text-slate-500 font-medium">Manage TOTO sales nodes and catalog intelligence sync.</p>
         </div>
         <div className="flex flex-wrap gap-3 w-full lg:w-auto relative z-10">
           <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -71,13 +70,13 @@ const Products: React.FC = () => {
              <SyncBtn icon={<Table size={16}/>} label="Sheets" onClick={() => triggerSyncNode('sheets')} />
           </div>
           <button onClick={() => setShowModal(true)} className="px-8 py-4 bg-brand text-white text-[10px] font-black uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-brand/20 hover:scale-105 transition-all">
-            <Plus size={18} /> Add SKU Node
+            <Plus size={18} /> Deploy SKU Node
           </button>
         </div>
       </div>
 
-      {/* Advanced Filter Perimeter */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      {/* Advanced Filtering Perimeter */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 text-left">
         <div className="xl:col-span-2 relative">
           <Search size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
@@ -85,36 +84,36 @@ const Products: React.FC = () => {
             type="text" 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
-            placeholder="Search Labels, SKUs, or Models..." 
-            className="w-full pl-16 pr-6 py-6 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] text-sm outline-none focus:border-brand font-medium shadow-sm transition-all" 
+            placeholder="Search SKUs or Product Labels..." 
+            className="w-full pl-16 pr-6 py-6 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2rem] text-sm outline-none focus:border-brand font-medium shadow-sm transition-all" 
           />
         </div>
         
         <div className="flex gap-4">
            <select 
              value={stockFilter} onChange={(e)=>setStockFilter(e.target.value as any)}
-             className="flex-1 px-6 py-5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest outline-none focus:border-brand appearance-none"
+             className="flex-1 px-6 py-5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest outline-none focus:border-brand appearance-none shadow-sm"
            >
-             <option value="all">Any Status</option>
+             <option value="all">Any Availability</option>
              <option value="in">In Stock Only</option>
              <option value="out">Out of Stock</option>
            </select>
            <select 
              value={activeCategory} onChange={(e)=>setActiveCategory(e.target.value)}
-             className="flex-1 px-6 py-5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest outline-none focus:border-brand appearance-none"
+             className="flex-1 px-6 py-5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest outline-none focus:border-brand appearance-none shadow-sm"
            >
-             {categories.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+             {categories.map(c => <option key={c} value={c}>Category: {c.toUpperCase()}</option>)}
            </select>
         </div>
         
-        <div className="px-8 py-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] flex flex-col justify-center">
-           <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 mb-2"><span>Price Range</span> <span>RM {priceRange[1]}</span></div>
-           <input type="range" min="0" max="5000" step="50" value={priceRange[1]} onChange={(e)=>setPriceRange([0, Number(e.target.value)])} className="w-full accent-brand h-1.5 rounded-full" />
+        <div className="px-8 py-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[1.5rem] flex flex-col justify-center shadow-sm">
+           <div className="flex justify-between text-[8px] font-black uppercase text-slate-400 mb-2"><span>Price Ceiling</span> <span>RM {priceRange[1]}</span></div>
+           <input type="range" min="0" max="5000" step="100" value={priceRange[1]} onChange={(e)=>setPriceRange([0, Number(e.target.value)])} className="w-full accent-brand h-1.5 rounded-full" />
         </div>
       </div>
 
       {isSyncing && (
-        <div className="bg-brand/5 border border-brand/20 p-10 rounded-[3rem] space-y-4 animate-in slide-in-from-top">
+        <div className="bg-brand/5 border border-brand/20 p-10 rounded-[3rem] space-y-4 animate-in slide-in-from-top text-left">
           <div className="flex items-center justify-between">
             <p className="text-xs font-black text-brand uppercase tracking-widest flex items-center gap-3"><RefreshCw className="animate-spin" size={16} /> Syncing Intelligence Hub...</p>
             <span className="text-xl font-black text-brand">{syncProgress}%</span>
@@ -123,7 +122,7 @@ const Products: React.FC = () => {
         </div>
       )}
 
-      {/* Product Catalog Grid */}
+      {/* Catalog Grid View */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {filteredCatalog.map((p, idx) => (
           <div 
@@ -133,9 +132,7 @@ const Products: React.FC = () => {
           >
             <div className="relative mb-6">
                <img src={p.image} className="w-full h-48 rounded-[2rem] object-cover shadow-inner group-hover:scale-105 transition-transform" />
-               <div className="absolute top-4 right-4">
-                  <SourceTag source={idx % 2 === 0 ? 'shopify' : 'sheets'} status={idx % 4 === 0 ? 'error' : 'synced'} />
-               </div>
+               <div className="absolute top-4 right-4"><SourceTag source={idx % 2 === 0 ? 'shopify' : 'sheets'} status={idx === 2 ? 'error' : 'synced'} /></div>
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-start">
@@ -157,7 +154,7 @@ const Products: React.FC = () => {
         ))}
       </div>
 
-      {/* Product Information Detail Modal */}
+      {/* SKU Intel Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
           <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[4rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col md:flex-row text-left">
@@ -168,11 +165,11 @@ const Products: React.FC = () => {
              <div className="w-full md:w-1/2 p-12 space-y-10">
                 <div className="flex items-center justify-between">
                    <span className="px-5 py-2 bg-brand/10 text-brand rounded-full text-[10px] font-black uppercase tracking-[0.2em]">{selectedProduct.category}</span>
-                   <button onClick={() => setSelectedProduct(null)} className="hidden md:block p-2 text-slate-400 hover:text-brand"><X size={32}/></button>
+                   <button onClick={() => setSelectedProduct(null)} className="hidden md:block p-2 text-slate-400 hover:text-brand transition-all hover:scale-110"><X size={32}/></button>
                 </div>
                 <div>
                    <h2 className="text-4xl font-bold font-outfit tracking-tighter leading-none">{selectedProduct.name}</h2>
-                   <p className="text-slate-400 text-sm font-bold mt-4">Node SKU Identifier: {selectedProduct.sku}</p>
+                   <p className="text-slate-400 text-sm font-bold mt-4">Authorized Node SKU: {selectedProduct.sku}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-8">
                    <div className="p-8 bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] border border-slate-100 dark:border-slate-800">
@@ -180,21 +177,21 @@ const Products: React.FC = () => {
                       <p className="text-3xl font-black font-outfit text-brand">RM {selectedProduct.price}</p>
                    </div>
                    <div className="p-8 bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><ShoppingCart size={14}/> Inventory</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><ShoppingCart size={14}/> Stock Unit</p>
                       <p className={`text-3xl font-black font-outfit ${selectedProduct.stock > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{selectedProduct.stock}</p>
                    </div>
                 </div>
                 <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                    <div className="flex items-center justify-between text-sm font-bold">
                       <span className="flex items-center gap-3 text-slate-500"><BarChart size={16}/> Lifetime Node Sales</span>
-                      <span className="font-black text-slate-900 dark:text-white">{selectedProduct.salesCount || 156} Nodes</span>
+                      <span className="font-black text-slate-900 dark:text-white">{selectedProduct.salesCount || 156} Units</span>
                    </div>
                    <div className="flex items-center justify-between text-sm font-bold">
                       <span className="flex items-center gap-3 text-slate-500"><CheckCircle size={16}/> Sync Integrity</span>
-                      <span className="font-black text-emerald-500">Master Source Verified</span>
+                      <span className="font-black text-emerald-500">Master Verified</span>
                    </div>
                 </div>
-                <button className="w-full py-6 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-3xl shadow-xl hover:bg-black transition-all">Authorize Node Update</button>
+                <button className="w-full py-6 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-3xl shadow-xl hover:bg-black transition-all">Authorize Parameters Update</button>
              </div>
           </div>
         </div>
