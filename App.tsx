@@ -90,6 +90,7 @@ const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([
     { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 156 },
     { id: '2', name: 'FaceID Gate Lock X2', price: 2499.00, stock: 12, category: 'Gate Locks', sku: 'GL-X2', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 89 },
+    { id: '3', name: 'TOTO Padlock Lite', price: 199.00, stock: 0, category: 'Padlocks', sku: 'PL-LITE', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 240 },
   ]);
 
   const [conversations, setConversations] = useState<Conversation[]>([
@@ -117,6 +118,8 @@ const App: React.FC = () => {
       unreadCount: 0, 
       isHumanTakeover: true, 
       assignedStaff: 'Agent Sarah',
+      assignedAt: new Date(Date.now() - 3600000 * 6).toISOString(), // 6 hours ago
+      firstResponseAt: new Date(Date.now() - 600000).toISOString(), // 10 mins ago
       priority: 'medium', 
       status: 'active', 
       dealStatus: 'won',
