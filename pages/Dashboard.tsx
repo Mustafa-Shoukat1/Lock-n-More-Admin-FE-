@@ -1,19 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, PieChart, Pie, Cell
+  CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis
 } from 'recharts';
-// Added Smartphone to the imports from lucide-react
-import { TrendingUp, MessageSquare, ShoppingCart, Target, Search, ExternalLink, Activity, DollarSign, Zap, Clock, ChevronRight, BarChart3, Package, Calendar, ArrowUpRight, MousePointer2, AlertCircle, Smartphone } from 'lucide-react';
+import { DollarSign, Activity, Target, Zap, MessageSquare, Smartphone, BarChart3, Calendar, ArrowUpRight, AlertCircle } from 'lucide-react';
 import { useApp } from '../App';
-import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
-  const { t, conversations, products } = useApp();
-  const [reportDays, setReportDays] = useState('7');
+  const { conversations, orders, simulateLead } = useApp();
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
 
+  const totalRevenue = useMemo(() => orders.reduce((acc, curr) => acc + curr.amount, 0), [orders]);
+  
   const salesData = useMemo(() => [
     { name: 'Mon', sales: 4200 },
     { name: 'Tue', sales: 3100 },
@@ -21,25 +20,19 @@ const Dashboard: React.FC = () => {
     { name: 'Thu', sales: 4780 },
     { name: 'Fri', sales: 2890 },
     { name: 'Sat', sales: 6390 },
-    { name: 'Sun', sales: 8490 },
-  ], []);
-
-  const platformData = [
-    { name: 'WhatsApp', value: 55, color: '#25D366' },
-    { name: 'Instagram', value: 30, color: '#DD2A7B' },
-    { name: 'TikTok', value: 15, color: '#000000' },
-  ];
+    { name: 'Sun', sales: totalRevenue > 20000 ? totalRevenue : 8490 },
+  ], [totalRevenue]);
 
   const handleGenerate = () => {
     setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 1500);
+    simulateLead();
+    setTimeout(() => setIsGenerating(false), 800);
   };
 
   const pendingLeads = useMemo(() => conversations.filter(c => c.unreadCount > 0), [conversations]);
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto pb-24 md:pb-8">
-      {/* Welcome & Report Header */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 bg-surface dark:bg-slate-900 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-outfit tracking-tighter">Ecosystem Pulse</h1>
@@ -53,13 +46,10 @@ const Dashboard: React.FC = () => {
           <div className="relative flex-1 lg:flex-none lg:min-w-[140px]">
              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
              <select 
-               value={reportDays}
-               onChange={(e) => setReportDays(e.target.value)}
                className="w-full pl-9 pr-3 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-brand/10 appearance-none cursor-pointer"
              >
                <option value="7">Last 7 Days</option>
-               <option value="30">Last 30 Days</option>
-               <option value="90">90D View</option>
+               <option value="30">30D Velocity</option>
              </select>
           </div>
           <button 
@@ -68,21 +58,19 @@ const Dashboard: React.FC = () => {
             className={`flex-1 lg:flex-none px-6 sm:px-8 py-3 bg-brand text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-700 shadow-xl shadow-brand/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
           >
             {isGenerating ? <Zap size={14} className="animate-spin" /> : <BarChart3 size={14} />}
-            {isGenerating ? 'Computing...' : 'Deploy Report'}
+            {isGenerating ? 'Simulating...' : 'Simulate Signal'}
           </button>
         </div>
       </div>
 
-      {/* KPI GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <DashMetric label="Revenue Flow" value="RM 58.4k" trend="+22%" icon={<DollarSign />} color="blue" />
-        <DashMetric label="Active Signals" value={conversations.length.toString()} trend="+4 today" icon={<Activity />} color="emerald" />
+        <DashMetric label="Revenue Flow" value={`RM ${(totalRevenue / 1000).toFixed(1)}k`} trend="+22%" icon={<DollarSign />} color="blue" />
+        <DashMetric label="Active Signals" value={conversations.length.toString()} trend={`+${pendingLeads.length} unread`} icon={<Activity />} color="emerald" />
         <DashMetric label="Closure Rate" value="21.2%" trend="+3.4%" icon={<Target />} color="amber" />
         <DashMetric label="TOTO Uptime" value="99.98%" trend="Optimal" icon={<Zap />} color="purple" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        {/* Performance Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-10 gap-4">
             <div>
@@ -115,12 +103,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Actions & Pending Leads */}
         <div className="space-y-6">
           <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl sm:rounded-[3rem] text-white border border-slate-800 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform hidden sm:block">
-              <Sparkles size={120} className="text-brand" />
-            </div>
             <h3 className="text-lg sm:text-xl font-bold font-outfit mb-6 flex items-center gap-2"><Zap size={20} className="text-brand" /> Hub Management</h3>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
                <button onClick={() => navigate('/inbox')} className="p-4 sm:p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all text-left">
@@ -175,12 +159,6 @@ const Dashboard: React.FC = () => {
   );
 };
 
-const Sparkles = ({ size = 24, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="currentColor"/>
-  </svg>
-);
-
 const CheckCheck = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <path d="M7 13L10 16L17 9M1 13L4 16L11 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -196,9 +174,6 @@ const DashMetric = ({ label, value, trend, icon, color }: any) => {
   };
   return (
     <div className="bg-surface dark:bg-slate-900 p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all hover:scale-[1.02] duration-500 group overflow-hidden">
-      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform hidden sm:block">
-        {React.cloneElement(icon, { size: 100 })}
-      </div>
       <div className="flex items-center justify-between mb-6 sm:mb-8">
         <div className={`p-3 sm:p-4 rounded-xl sm:rounded-[1.25rem] transition-transform group-hover:scale-110 shadow-sm ${(colors as any)[color]}`}>
           {React.cloneElement(icon, { size: 20 })}

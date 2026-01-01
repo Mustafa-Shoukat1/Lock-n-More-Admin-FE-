@@ -1,26 +1,16 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Search, Filter, MoreHorizontal, Download, ArrowUpRight, CheckCircle2, Clock, ShieldCheck } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { ShoppingCart, Download, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { useApp } from '../App';
 
 const Orders: React.FC = () => {
-  const { searchQuery } = useApp();
-  const [orders] = useState([
-    { id: '#TOTO-1024', customer: 'Beh Chen', status: 'fulfilled', amount: 1299.00, date: 'Today, 10:45 AM', platform: 'whatsapp' },
-    { id: '#TOTO-1023', customer: 'Sarah Lim', status: 'pending', amount: 899.00, date: 'Today, 09:15 AM', platform: 'instagram' },
-    { id: '#TOTO-1022', customer: 'Ahmad Faiz', status: 'processing', amount: 2450.00, date: 'Yesterday', platform: 'tiktok' },
-    { id: '#TOTO-1021', customer: 'Jasmine Wong', status: 'fulfilled', amount: 1299.00, date: 'Yesterday', platform: 'whatsapp' },
-    { id: '#TOTO-1020', customer: 'Kumar Raj', status: 'pending', amount: 599.00, date: 'Yesterday', platform: 'instagram' },
-    { id: '#TOTO-1019', customer: 'Melissa Tan', status: 'fulfilled', amount: 1899.00, date: '2 days ago', platform: 'tiktok' },
-    { id: '#TOTO-1018', customer: 'David Lee', status: 'processing', amount: 6495.00, date: '2 days ago', platform: 'whatsapp' },
-    { id: '#TOTO-1017', customer: 'Zurina Ismail', status: 'pending', amount: 299.00, date: '3 days ago', platform: 'instagram' },
-    { id: '#TOTO-1016', customer: 'Ali Hamza', status: 'fulfilled', amount: 150.00, date: '3 days ago', platform: 'whatsapp' },
-    { id: '#TOTO-1015', customer: 'Wong S.H.', status: 'fulfilled', amount: 2199.00, date: '4 days ago', platform: 'instagram' },
-  ]);
+  const { searchQuery, orders } = useApp();
 
-  const filteredOrders = orders.filter(o => 
+  const filteredOrders = useMemo(() => orders.filter(o => 
     o.customer.toLowerCase().includes(searchQuery.toLowerCase()) || 
     o.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [orders, searchQuery]);
+
+  const totalRevenue = useMemo(() => orders.reduce((acc, curr) => acc + curr.amount, 0), [orders]);
 
   return (
     <div className="p-6 md:p-12 space-y-10 max-w-7xl mx-auto pb-32">
@@ -37,7 +27,7 @@ const Orders: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <OrderStats label="Total Processed" value="RM 58,540" icon={<ShoppingCart size={20} />} color="text-brand bg-brand/10" />
+        <OrderStats label="Total Processed" value={`RM ${totalRevenue.toLocaleString()}`} icon={<ShoppingCart size={20} />} color="text-brand bg-brand/10" />
         <OrderStats label="Conversion Hub" value="21.2%" icon={<ArrowUpRight size={20} />} color="text-emerald-500 bg-emerald-500/10" />
         <OrderStats label="Secure Nodes" value="100% Verified" icon={<ShieldCheck size={20} />} color="text-purple-500 bg-purple-500/10" />
       </div>
@@ -55,7 +45,7 @@ const Orders: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-900">
-              {filteredOrders.map((order) => (
+              {filteredOrders.length > 0 ? filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer group">
                   <td className="px-8 py-6">
                     <span className="text-sm font-bold font-mono text-brand">{order.id}</span>
@@ -70,7 +60,11 @@ const Orders: React.FC = () => {
                   </td>
                   <td className="px-8 py-6 text-right text-xs font-bold text-slate-400">{order.date}</td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={5} className="p-20 text-center text-slate-400 uppercase font-black text-xs tracking-widest opacity-30">No Orders in Perimeter</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

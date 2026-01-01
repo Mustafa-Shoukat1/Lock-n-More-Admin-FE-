@@ -15,8 +15,16 @@ import { Language, Product, Conversation, User as UserType, AiSettings, Message 
 import { translations } from './i18n';
 import { LayoutDashboard, MessageSquare, Package, BookOpen, ShoppingCart } from 'lucide-react';
 
-// Professional notification chime URL
 const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
+
+interface Order {
+  id: string;
+  customer: string;
+  status: 'fulfilled' | 'pending' | 'processing';
+  amount: number;
+  date: string;
+  platform: string;
+}
 
 interface AppContextType {
   lang: Language;
@@ -34,11 +42,14 @@ interface AppContextType {
   setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
   staff: UserType[];
   setStaff: React.Dispatch<React.SetStateAction<UserType[]>>;
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   aiSettings: AiSettings;
   setAiSettings: React.Dispatch<React.SetStateAction<AiSettings>>;
   sendMessage: (convId: string, text: string, sender: 'staff' | 'ai', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
   assignStaff: (convId: string, staffName: string) => void;
   generateInvoice: (convId: string, amount: number) => void;
+  simulateLead: () => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   playNotificationSound: () => void;
@@ -102,19 +113,12 @@ const App: React.FC = () => {
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'High Priority Lead', message: 'Beh Chen is asking about biometric locks for sliding doors.', type: 'lead', time: '2m ago', read: false },
     { id: 2, title: 'Shopify Sync Success', message: 'All 240 product nodes synchronized.', type: 'system', time: '1h ago', read: false },
-    { id: 3, title: 'Unusual Volume', message: 'Spike in Instagram DMs detected (+45%).', type: 'system', time: '3h ago', read: false },
-    { id: 4, title: 'New Review', message: 'Sarah Lim left a 5-star review on Shopify.', type: 'lead', time: '5h ago', read: true },
   ]);
 
   const [products, setProducts] = useState<Product[]>([
     { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200' },
     { id: '2', name: 'Slim-Fit Deadbolt X1', price: 899.00, stock: 12, category: 'Deadbolts', sku: 'SD-X1-BL', image: 'https://images.unsplash.com/photo-1510003307521-f09516640925?auto=format&fit=crop&q=80&w=200' },
     { id: '3', name: 'TOTO Face-ID Node V3', price: 2199.00, stock: 8, category: 'Facial Recognition', sku: 'FR-FACE1', image: 'https://images.unsplash.com/photo-1518005020251-5830d624ef7c?auto=format&fit=crop&q=80&w=200' },
-    { id: '4', name: 'Smart Video Doorbell 4K', price: 599.00, stock: 60, category: 'Accessories', sku: 'AC-DBEL1', image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&q=80&w=200' },
-    { id: '5', name: 'Biometric Padlock S', price: 199.00, stock: 110, category: 'Accessories', sku: 'AC-PADL1', image: 'https://images.unsplash.com/photo-1631541490204-6385a5078508?auto=format&fit=crop&q=80&w=200' },
-    { id: '6', name: 'Sliding Door Smart Kit', price: 1499.00, stock: 22, category: 'Digital Locks', sku: 'SL-SDKIT', image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=200' },
-    { id: '7', name: 'Commercial Gate Node', price: 4299.00, stock: 5, category: 'Enterprise', sku: 'ENT-GATE-01', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=200' },
-    { id: '8', name: 'Keypad Lever Lock', price: 449.00, stock: 85, category: 'Deadbolts', sku: 'SD-KLEV-01', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
   ]);
 
   const [conversations, setConversations] = useState<Conversation[]>([
@@ -124,18 +128,16 @@ const App: React.FC = () => {
       { id: 'm3', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
     ] },
     { id: '2', customerName: 'Sarah Lim', customerPhone: '@sarah_l', platform: 'instagram', lastMessage: 'Thank you for the help!', lastTimestamp: '09:15 AM', unreadCount: 0, isHumanTakeover: false, priority: 'low', status: 'active', messages: [] },
-    { id: '3', customerName: 'Ahmad Faiz', customerPhone: '@faiz_locks', platform: 'tiktok', lastMessage: 'I want to see the Face-ID lock in action.', lastTimestamp: '08:10 AM', unreadCount: 1, isHumanTakeover: true, assignedStaff: 'Agent Sarah', priority: 'medium', status: 'active', messages: [] },
-    { id: '4', customerName: 'Jasmine Wong', customerPhone: '+60 11-232 4455', platform: 'whatsapp', lastMessage: 'Price for TOTO Pro V2?', lastTimestamp: 'Yesterday', unreadCount: 0, isHumanTakeover: false, priority: 'high', status: 'active', messages: [] },
-    { id: '5', customerName: 'Kumar Raj', customerPhone: '@kumar_access', platform: 'instagram', lastMessage: 'Is the installation included?', lastTimestamp: 'Yesterday', unreadCount: 0, isHumanTakeover: false, priority: 'medium', status: 'pending', messages: [] },
-    { id: '6', customerName: 'Melissa Tan', customerPhone: '@mel_locks', platform: 'tiktok', lastMessage: 'Can I pay via GrabPay?', lastTimestamp: '2 days ago', unreadCount: 0, isHumanTakeover: false, priority: 'medium', status: 'active', messages: [] },
-    { id: '7', customerName: 'David Lee', customerPhone: '+60 17-998 1122', platform: 'whatsapp', lastMessage: 'Need 10 units for my office.', lastTimestamp: '3 days ago', unreadCount: 0, isHumanTakeover: true, assignedStaff: 'Mustafa S.', priority: 'high', status: 'active', messages: [] },
-    { id: '8', customerName: 'Zurina Ismail', customerPhone: '@zurina_i', platform: 'instagram', lastMessage: 'Looking for a rose gold finish.', lastTimestamp: '4 days ago', unreadCount: 0, isHumanTakeover: false, priority: 'low', status: 'active', messages: [] },
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
     { id: 'staff1', name: 'Mustafa S.', email: 'admin@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
     { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
-    { id: 'staff3', name: 'John Doe', email: 'john@locksnmore.com', role: 'agent', active: false, lastLogin: '2 days ago', avatar: 'https://i.pravatar.cc/150?u=john' },
+  ]);
+
+  const [orders, setOrders] = useState<Order[]>([
+    { id: '#TOTO-1024', customer: 'Beh Chen', status: 'fulfilled', amount: 1299.00, date: 'Today, 10:45 AM', platform: 'whatsapp' },
+    { id: '#TOTO-1023', customer: 'Sarah Lim', status: 'pending', amount: 899.00, date: 'Today, 09:15 AM', platform: 'instagram' },
   ]);
 
   const prevNotificationCount = useRef(notifications.length);
@@ -143,17 +145,13 @@ const App: React.FC = () => {
   const playNotificationSound = () => {
     const audio = new Audio(NOTIFICATION_SOUND_URL);
     audio.volume = 0.5;
-    audio.play().catch(e => console.log('Audio blocked by browser. User interaction needed.'));
+    audio.play().catch(() => {});
   };
 
-  // Sound listener for new notifications
   useEffect(() => {
     if (notifications.length > prevNotificationCount.current) {
-      // Check if the latest notification is unread
       const latest = notifications[0];
-      if (latest && !latest.read) {
-        playNotificationSound();
-      }
+      if (latest && !latest.read) playNotificationSound();
     }
     prevNotificationCount.current = notifications.length;
   }, [notifications]);
@@ -172,19 +170,70 @@ const App: React.FC = () => {
 
     setConversations(prev => prev.map(c => 
       c.id === convId 
-        ? { ...c, messages: [...c.messages, newMessage], lastMessage: type === 'image' ? 'Sent an image' : (type === 'voice' ? 'Sent a voice message' : text), lastTimestamp: timestamp }
+        ? { ...c, messages: [...c.messages, newMessage], lastMessage: type === 'image' ? 'Sent an image' : (type === 'voice' ? 'Sent a voice message' : text), lastTimestamp: timestamp, unreadCount: 0 }
         : c
     ));
   };
 
   const generateInvoice = (convId: string, amount: number) => {
-    const invoiceLink = `https://checkout.shopify.com/toto/inv_${Math.random().toString(36).substring(7)}`;
-    sendMessage(convId, `Order confirmed! Automated Shopify Invoice generated: ${invoiceLink}\nTotal: RM ${amount.toLocaleString()}`, 'staff');
+    const activeChat = conversations.find(c => c.id === convId);
+    if (!activeChat) return;
+
+    const invoiceId = `#TOTO-${1025 + orders.length}`;
+    const invoiceLink = `https://checkout.shopify.com/toto/${invoiceId.replace('#', '')}`;
+    
+    const newOrder: Order = {
+      id: invoiceId,
+      customer: activeChat.customerName,
+      status: 'pending',
+      amount: amount,
+      date: 'Just Now',
+      platform: activeChat.platform
+    };
+
+    setOrders(prev => [newOrder, ...prev]);
+    sendMessage(convId, `Order generated! Secure Shopify Invoice Link: ${invoiceLink}\nTotal: RM ${amount.toLocaleString()}`, 'staff');
+    
     setNotifications(prev => [{
       id: Date.now(),
-      title: 'Invoice Deployed',
-      message: `TOTO Automation: Invoice generated for customer in Chat ${convId}.`,
+      title: 'Order Synchronized',
+      message: `Invoice ${invoiceId} deployed for ${activeChat.customerName}.`,
       type: 'system',
+      time: 'Just now',
+      read: false
+    }, ...prev]);
+  };
+
+  const simulateLead = () => {
+    const names = ['Wei Lung', 'Aisha', 'Ramesh', 'Kevin Tan', 'Siti'];
+    const platforms: any[] = ['whatsapp', 'instagram', 'tiktok'];
+    const queries = ['Do you have stock for A100?', 'Can I install this on a fire door?', 'Is there a warranty?', 'I want to buy 3 units.'];
+    
+    const name = names[Math.floor(Math.random() * names.length)];
+    const platform = platforms[Math.floor(Math.random() * platforms.length)];
+    const query = queries[Math.floor(Math.random() * queries.length)];
+    const id = (conversations.length + 1).toString();
+
+    const newConv: Conversation = {
+      id,
+      customerName: name,
+      customerPhone: platform === 'whatsapp' ? '+60 1x-xxx xxxx' : `@${name.toLowerCase()}`,
+      platform,
+      lastMessage: query,
+      lastTimestamp: 'Just Now',
+      unreadCount: 1,
+      isHumanTakeover: false,
+      priority: 'high',
+      status: 'active',
+      messages: [{ id: 'sm1', sender: 'customer', text: query, timestamp: 'Just Now', type: 'text' }]
+    };
+
+    setConversations(prev => [newConv, ...prev]);
+    setNotifications(prev => [{
+      id: Date.now(),
+      title: 'New Signal Detected',
+      message: `${name} started a thread on ${platform.toUpperCase()}.`,
+      type: 'lead',
       time: 'Just now',
       read: false
     }, ...prev]);
@@ -202,8 +251,8 @@ const App: React.FC = () => {
     <AppContext.Provider value={{ 
       lang, setLang, t, searchQuery, setSearchQuery, activeUser, setActiveUser,
       notifications, setNotifications, products, setProducts, conversations, setConversations,
-      staff, setStaff, aiSettings, setAiSettings, sendMessage, assignStaff, generateInvoice,
-      isSidebarOpen, setSidebarOpen, playNotificationSound
+      staff, setStaff, orders, setOrders, aiSettings, setAiSettings, sendMessage, assignStaff, generateInvoice,
+      simulateLead, isSidebarOpen, setSidebarOpen, playNotificationSound
     }}>
       <Router>
         <div className="flex h-screen overflow-hidden bg-primary">
