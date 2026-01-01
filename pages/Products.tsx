@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Plus, RefreshCw, X, CloudSync, Edit2, ShoppingCart, Tag, BarChart, CheckCircle, Table, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, RefreshCw, X, CloudSync, Edit2, ShoppingCart, Tag, BarChart, CheckCircle, Table, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { useApp } from '../App';
 import { Product } from '../types';
 
 type SyncSource = 'shopify' | 'sheets' | 'kb';
 
 const Products: React.FC = () => {
-  const { products, setProducts, setNotifications } = useApp();
+  const { products, setProducts, setNotifications, syncCatalog, addLog } = useApp();
   const [search, setSearch] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState(0);
@@ -34,6 +34,7 @@ const Products: React.FC = () => {
         if (p >= 100) {
           clearInterval(interval);
           setIsSyncing(false);
+          syncCatalog(); // Actually randomizes stock/prices
           setNotifications(prev => [{ id: Date.now(), title: `${source.toUpperCase()} Synced`, message: `Inventory perimeter updated.`, type: 'system', time: 'Just now', read: false }, ...prev]);
           return 100;
         }
@@ -55,10 +56,20 @@ const Products: React.FC = () => {
       salesCount: 0
     };
     setProducts([...products, newP]);
+    addLog('success', `Manually deployed SKU node: ${newProductSKU}.`);
     setShowModal(false);
     setNewProductName('');
     setNewProductSKU('');
     setNewProductPrice('0');
+  };
+
+  const deleteProduct = (id: string) => {
+    if (confirm("Permanently decommission this SKU node from the perimeter?")) {
+      const p = products.find(prod => prod.id === id);
+      setProducts(products.filter(prod => prod.id !== id));
+      addLog('warning', `SKU Node ${p?.sku} decommissioned.`);
+      setSelectedProduct(null);
+    }
   };
 
   const filteredCatalog = useMemo(() => {
@@ -148,7 +159,13 @@ const Products: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[4rem] overflow-hidden shadow-2xl animate-in zoom-in duration-300 flex flex-col md:flex-row text-left">
              <div className="w-full md:w-1/2 relative h-80 md:h-auto"><img src={selectedProduct.image} className="w-full h-full object-cover" /></div>
              <div className="w-full md:w-1/2 p-12 space-y-10">
-                <div className="flex items-center justify-between"><span className="px-5 py-2 bg-brand/10 text-brand rounded-full text-[10px] font-black uppercase tracking-[0.2em]">{selectedProduct.category}</span><button onClick={() => setSelectedProduct(null)} className="p-2 text-slate-400 hover:text-brand transition-all hover:scale-110"><X size={32}/></button></div>
+                <div className="flex items-center justify-between">
+                  <span className="px-5 py-2 bg-brand/10 text-brand rounded-full text-[10px] font-black uppercase tracking-[0.2em]">{selectedProduct.category}</span>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => deleteProduct(selectedProduct.id)} className="p-3 text-red-500 hover:bg-red-50 rounded-2xl transition-all"><Trash2 size={24}/></button>
+                    <button onClick={() => setSelectedProduct(null)} className="p-2 text-slate-400 hover:text-brand transition-all hover:scale-110"><X size={32}/></button>
+                  </div>
+                </div>
                 <div><h2 className="text-4xl font-bold font-outfit tracking-tighter leading-none">{selectedProduct.name}</h2><p className="text-slate-400 text-sm font-bold mt-4">Authorized Node SKU: {selectedProduct.sku}</p></div>
                 <div className="grid grid-cols-2 gap-8">
                    <div className="p-8 bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] border border-slate-100 dark:border-slate-800"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Tag size={14}/> Node Price</p><p className="text-3xl font-black font-outfit text-brand">RM {selectedProduct.price}</p></div>
@@ -158,7 +175,7 @@ const Products: React.FC = () => {
                    <div className="flex items-center justify-between text-sm font-bold"><span className="flex items-center gap-3 text-slate-500"><BarChart size={16}/> Lifetime Node Sales</span><span className="font-black text-slate-900 dark:text-white">{selectedProduct.salesCount || 156} Units</span></div>
                    <div className="flex items-center justify-between text-sm font-bold"><span className="flex items-center gap-3 text-slate-500"><CheckCircle size={16}/> Sync Integrity</span><span className="font-black text-emerald-500">Master Verified</span></div>
                 </div>
-                <button className="w-full py-6 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-3xl shadow-xl hover:bg-black transition-all">Authorize Parameters Update</button>
+                <button onClick={() => setSelectedProduct(null)} className="w-full py-6 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-3xl shadow-xl hover:bg-black transition-all">Authorize Parameters Update</button>
              </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ import Documentation from './pages/Documentation';
 import Orders from './pages/Orders';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
-import { Language, Product, Conversation, User as UserType, AiSettings, Message } from './types';
+import { Language, Product, Conversation, User as UserType, AiSettings, Message, Platform } from './types';
 import { translations } from './i18n';
 import { db } from './services/db';
 
@@ -35,6 +35,13 @@ export const SafeText: React.FC<{ text: string }> = ({ text }) => {
     </>
   );
 };
+
+export interface SystemLog {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'ai';
+  message: string;
+  timestamp: string;
+}
 
 interface AppContextType {
   lang: Language;
@@ -58,12 +65,15 @@ interface AppContextType {
   setOrders: (o: any[]) => void;
   aiSettings: AiSettings;
   setAiSettings: (s: AiSettings) => void;
+  systemLogs: SystemLog[];
+  addLog: (type: SystemLog['type'], message: string) => void;
   sendMessage: (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
   assignStaff: (convId: string, staffName: string) => void;
   toggleAi: (convId: string) => void;
   markAsOpened: (convId: string) => void;
   generateInvoice: (convId: string, amount: number) => void;
   simulateLead: () => void;
+  syncCatalog: () => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   playNotificationSound: () => void;
@@ -93,10 +103,21 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [activeUser, setActiveUserInternal] = useState<UserType | null>(isLoggedIn ? data.staff[0] : null);
+  const [systemLogs, setSystemLogs] = useState<SystemLog[]>([]);
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Priority Signal', message: 'Beh Chen is asking about smart locks.', type: 'lead', time: '2m ago', read: false },
     { id: 2, title: 'Security Alert', message: 'Node Alpha connected.', type: 'system', time: '1h ago', read: false },
   ]);
+
+  const addLog = (type: SystemLog['type'], message: string) => {
+    const newLog: SystemLog = {
+      id: Math.random().toString(36).substr(2, 9),
+      type,
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+    setSystemLogs(prev => [newLog, ...prev].slice(0, 50));
+  };
 
   const updateData = (updates: Partial<typeof data>) => {
     setData(prev => {
@@ -115,6 +136,7 @@ const App: React.FC = () => {
   const setActiveUser = (u: UserType | null) => {
     setActiveUserInternal(u);
     if (u) {
+      addLog('info', `User ${u.name} initialized session.`);
       const updatedStaff = data.staff.map(s => s.id === u.id ? { ...s, lastLogin: 'Active Now' } : s);
       updateData({ staff: updatedStaff });
     }
@@ -122,6 +144,7 @@ const App: React.FC = () => {
 
   const resetDatabase = () => {
     if (confirm("Permanently wipe local perimeter data and reset to production defaults?")) {
+      addLog('warning', 'Hard system reset initiated.');
       const fresh = db.reset();
       setData(fresh);
       window.location.reload();
@@ -136,25 +159,44 @@ const App: React.FC = () => {
     audio.play().catch(() => {});
   };
 
-  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text') => {
+  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsg: Message = { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, status: 'sent' };
+    const newMsg: Message = { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, status: 'sent', mediaUrl };
     const updated = data.conversations.map(c => c.id === convId ? {
       ...c,
       messages: [...c.messages, newMsg],
-      lastMessage: type === 'voice' ? 'Voice Message' : text,
+      lastMessage: type === 'voice' ? 'Voice Message' : (type === 'image' ? 'Sent an image' : text),
       lastTimestamp: timestamp,
       unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0
     } : c);
     setConversations(updated);
+    if (sender === 'ai') addLog('ai', `AI suggestion injected into chat ${convId}.`);
+    else if (sender === 'staff') addLog('info', `Agent sent ${type} signal to ${convId}.`);
   };
 
   const assignStaff = (convId: string, staffName: string) => {
+    const conv = data.conversations.find(c => c.id === convId);
     setConversations(data.conversations.map(c => c.id === convId ? { ...c, assignedStaff: staffName, assignedAt: new Date().toISOString(), isHumanTakeover: true, aiEnabled: false } : c));
+    
+    // Add internal notification
+    setNotifications(prev => [{
+      id: Date.now(),
+      title: 'Action Required',
+      message: `Conversation with ${conv?.customerName || 'Customer'} assigned to ${staffName}.`,
+      type: 'lead',
+      time: 'Just Now',
+      read: false
+    }, ...prev]);
+    
+    addLog('success', `Assigned ${staffName} to conversation ${convId}.`);
+    playNotificationSound();
   };
 
   const toggleAi = (convId: string) => {
-    setConversations(data.conversations.map(c => c.id === convId ? { ...c, aiEnabled: !c.aiEnabled, isHumanTakeover: c.aiEnabled } : c));
+    const currentConv = data.conversations.find(c => c.id === convId);
+    const newState = !currentConv?.aiEnabled;
+    setConversations(data.conversations.map(c => c.id === convId ? { ...c, aiEnabled: newState, isHumanTakeover: !newState } : c));
+    addLog('ai', `AI Mode ${newState ? 'Enabled' : 'Disabled'} for node ${convId}.`);
   };
 
   const markAsOpened = (convId: string) => {
@@ -166,20 +208,45 @@ const App: React.FC = () => {
     const customer = data.conversations.find(c => c.id === convId)?.customerName || 'Customer';
     setOrders([{ id, customer, status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...data.orders]);
     sendMessage(convId, `Invoice ${id} for RM ${amount} generated.`, 'staff');
+    addLog('success', `Financial node deployed: Invoice ${id} for RM ${amount}.`);
   };
 
   const simulateLead = () => {
-    const queries = ["Price of A100 Pro?", "Any promotion for FaceID gate lock?", "Do you have smart padlocks in stock?", "Installation fee for biometric lock?"];
-    const names = ["Ahmad Fauzi", "Jenny Tan", "Siva Kumar", "Lim Wei"];
+    const queries = [
+      "Price of A100 Pro?", 
+      "Any promotion for FaceID gate lock?", 
+      "Do you have smart padlocks in stock?", 
+      "Installation fee for biometric lock?",
+      "Just saw your TikTok about the X2 lock, is it available?",
+      "DM-ed you on IG about the sliding door lock.",
+      "Can you repost the A100 install video?"
+    ];
+    const names = ["Ahmad Fauzi", "Jenny Tan", "Siva Kumar", "Lim Wei", "Syed Kamal", "Wong YM"];
+    const platforms: Platform[] = ['whatsapp', 'instagram', 'tiktok'];
+    
     const id = Date.now().toString();
     const query = queries[Math.floor(Math.random() * queries.length)];
+    const platform = platforms[Math.floor(Math.random() * platforms.length)];
+    
     const newConv: Conversation = {
-      id, customerName: names[Math.floor(Math.random() * names.length)], customerPhone: '+6011-XXXX-XXXX', platform: 'whatsapp', lastMessage: query, lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', aiEnabled: true,
+      id, customerName: names[Math.floor(Math.random() * names.length)], customerPhone: '+6011-XXXX-XXXX', platform, lastMessage: query, lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', aiEnabled: true,
       messages: [{ id: 'm'+id, sender: 'customer', text: query, timestamp: 'Just Now', type: 'text' }]
     };
+    
     setConversations([newConv, ...data.conversations]);
     playNotificationSound();
-    setNotifications(prev => [{ id: Date.now(), title: 'Signal Detected', message: `New lead from ${newConv.customerName}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
+    addLog('warning', `New ${platform.toUpperCase()} signal: Potential lead ${newConv.customerName} detected.`);
+    setNotifications(prev => [{ id: Date.now(), title: 'Signal Detected', message: `New ${platform} lead from ${newConv.customerName}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
+  };
+
+  const syncCatalog = () => {
+    const updatedProducts = data.products.map(p => ({
+      ...p,
+      stock: Math.floor(Math.random() * 100),
+      price: p.price + (Math.random() > 0.8 ? (Math.random() * 50 - 25) : 0)
+    }));
+    setProducts(updatedProducts);
+    addLog('success', 'Shopify Master Catalog synchronized successfully.');
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
@@ -188,8 +255,9 @@ const App: React.FC = () => {
     <AppContext.Provider value={{ 
       lang, setLang, t, searchQuery, setSearchQuery, activeUser, setActiveUser, isLoggedIn, setIsLoggedIn,
       notifications, setNotifications, products: data.products, setProducts, conversations: data.conversations, setConversations,
-      staff: data.staff, setStaff, orders: data.orders, setOrders, aiSettings: data.aiSettings, setAiSettings, sendMessage, assignStaff, toggleAi, markAsOpened, generateInvoice,
-      simulateLead, isSidebarOpen, setSidebarOpen, playNotificationSound, resetDatabase
+      staff: data.staff, setStaff, orders: data.orders, setOrders, aiSettings: data.aiSettings, setAiSettings, 
+      systemLogs, addLog, sendMessage, assignStaff, toggleAi, markAsOpened, generateInvoice, simulateLead, syncCatalog,
+      isSidebarOpen, setSidebarOpen, playNotificationSound, resetDatabase
     }}>
       <Router>
         <div className="flex h-screen overflow-hidden bg-primary">

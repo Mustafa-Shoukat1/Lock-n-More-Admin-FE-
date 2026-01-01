@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BrainCircuit, Save, RotateCcw, Zap, Target, Heart, ShieldCheck, AlignLeft, RefreshCw, ChevronRight, Sparkles, Info, MessageCircle, BarChart2, ShieldAlert, Cpu, Layers, Fingerprint, SearchCheck } from 'lucide-react';
+import { BrainCircuit, Save, RotateCcw, Zap, Target, Heart, ShieldCheck, AlignLeft, RefreshCw, ChevronRight, Sparkles, Info, MessageCircle, BarChart2, ShieldAlert, Cpu, Layers, Fingerprint, SearchCheck, Activity, Globe, Database, Terminal } from 'lucide-react';
 import { useApp, SafeText } from '../App';
 import { gemini } from '../services/gemini';
 
@@ -59,42 +59,52 @@ const AIManager: React.FC = () => {
             <span className="text-[11px] font-black text-brand uppercase tracking-[0.2em]">TOTO Cognitive Node</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold font-outfit tracking-tighter leading-none">AI Management Hub</h1>
-          <p className="text-slate-400 max-w-xl font-medium text-lg leading-relaxed text-left">Calibrate linguistic reasoning archetypes and behavior matrices for automated sales signals.</p>
+          <p className="text-slate-400 max-w-xl font-medium text-lg leading-relaxed text-left">Calibrate linguistic reasoning archetypes and behavior matrices for automated sales signals across WhatsApp, IG, and TikTok.</p>
         </div>
-        <button onClick={handleSave} className="relative z-10 px-12 py-5 bg-brand text-white text-[11px] font-black uppercase tracking-widest rounded-[2rem] flex items-center gap-4 shadow-2xl shadow-brand/40 hover:scale-105 active:scale-95 transition-all">
-          <Save size={20} /> Deploy Intelligence
-        </button>
+        <div className="flex gap-4 relative z-10 w-full md:w-auto">
+          <button onClick={handleSave} className="flex-1 px-12 py-5 bg-brand text-white text-[11px] font-black uppercase tracking-widest rounded-[2rem] flex items-center justify-center gap-4 shadow-2xl shadow-brand/40 hover:scale-105 active:scale-95 transition-all">
+            <Save size={20} /> Deploy Intelligence
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 text-left">
-        <div className="lg:col-span-2 space-y-12 bg-white dark:bg-slate-900 p-10 sm:p-14 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-xl">
+        <div className="lg:col-span-2 space-y-12">
           
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter">Personality Matrix</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Core behavior archetype selection</p>
+          <div className="bg-white dark:bg-slate-900 p-10 sm:p-14 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter">Personality Matrix</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Core behavior archetype selection</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {personalities.map((p) => (
+                <button 
+                  key={p.id} onClick={() => setAiSettings({...aiSettings, personality: p.id as any})}
+                  className={`p-8 rounded-[2rem] border-2 text-left transition-all relative overflow-hidden ${aiSettings.personality === p.id ? 'border-brand bg-brand/5 shadow-xl' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-950'}`}
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${aiSettings.personality === p.id ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-slate-50 dark:bg-slate-900 text-slate-400'}`}>{p.icon}</div>
+                  <p className="text-sm font-black uppercase tracking-widest">{p.label}</p>
+                  <p className="text-[10px] text-slate-500 mt-2 font-bold leading-tight">{p.desc}</p>
+                  {aiSettings.personality === p.id && <div className="absolute top-4 right-4 text-brand"><Zap size={12} fill="currentColor"/></div>}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-12 pt-14 border-t border-slate-100 dark:border-slate-800 mt-14">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <SliderControl label="Response Density" value={aiSettings.responseLength} onChange={(v: number) => setAiSettings({...aiSettings, responseLength: v})} icon={<AlignLeft size={18}/>} desc="Increased token limit for verbose explanations." />
+                <SliderControl label="Creativity Core" value={aiSettings.creativity} onChange={(v: number) => setAiSettings({...aiSettings, creativity: v})} icon={<Sparkles size={18}/>} desc="Randomness variance in vocabulary and style." />
+              </div>
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {personalities.map((p) => (
-              <button 
-                key={p.id} onClick={() => setAiSettings({...aiSettings, personality: p.id as any})}
-                className={`p-8 rounded-[2rem] border-2 text-left transition-all relative overflow-hidden ${aiSettings.personality === p.id ? 'border-brand bg-brand/5 shadow-xl' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-white dark:bg-slate-950'}`}
-              >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 ${aiSettings.personality === p.id ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'bg-slate-50 dark:bg-slate-900 text-slate-400'}`}>{p.icon}</div>
-                <p className="text-sm font-black uppercase tracking-widest">{p.label}</p>
-                <p className="text-[10px] text-slate-500 mt-2 font-bold leading-tight">{p.desc}</p>
-                {aiSettings.personality === p.id && <div className="absolute top-4 right-4 text-brand"><Zap size={12} fill="currentColor"/></div>}
-              </button>
-            ))}
-          </div>
 
-          <div className="space-y-12 pt-14 border-t border-slate-100 dark:border-slate-800">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-               <SliderControl label="Response Density" value={aiSettings.responseLength} onChange={(v) => setAiSettings({...aiSettings, responseLength: v})} icon={<AlignLeft size={18}/>} desc="Increased token limit for verbose explanations." />
-               <SliderControl label="Creativity Core" value={aiSettings.creativity} onChange={(v) => setAiSettings({...aiSettings, creativity: v})} icon={<Sparkles size={18}/>} desc="Randomness variance in vocabulary and style." />
-             </div>
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-10 sm:p-14 rounded-[4rem] border border-slate-100 dark:border-slate-800 shadow-inner grid grid-cols-1 md:grid-cols-3 gap-8">
+             <StatusCard label="Token Integrity" value="High" icon={<Database size={18} className="text-emerald-500"/>} />
+             <StatusCard label="Knowledge Sync" value="Verified" icon={<Globe size={18} className="text-brand"/>} />
+             <StatusCard label="API Latency" value="214ms" icon={<Activity size={18} className="text-purple-500"/>} />
           </div>
         </div>
 
@@ -102,7 +112,7 @@ const AIManager: React.FC = () => {
         <div className="bg-slate-950 p-12 rounded-[4rem] text-white flex flex-col min-h-[600px] border border-slate-800 shadow-2xl sticky top-28 transition-all hover:border-brand/30">
           <div className="flex items-center justify-between mb-12">
             <div>
-              <h3 className="text-xl font-bold font-outfit tracking-tighter uppercase flex items-center gap-3"><Zap size={28} className="text-brand" /> Logic Terminal</h3>
+              <h3 className="text-xl font-bold font-outfit tracking-tighter uppercase flex items-center gap-3"><Terminal size={28} className="text-brand" /> Logic Terminal</h3>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Authorized Simulation Suite</p>
             </div>
             <button onClick={() => {setTestOutput(''); setTestInput('');}} className="p-3 bg-white/5 rounded-2xl text-slate-500 hover:text-white transition-all shadow-inner"><RotateCcw size={20}/></button>
@@ -130,7 +140,7 @@ const AIManager: React.FC = () => {
             ) : (
               <div className="h-full flex flex-col items-center justify-center opacity-10 text-center space-y-6">
                 <BarChart2 size={80} className="text-slate-400" />
-                <p className="text-[11px] font-black uppercase tracking-[0.6em] text-slate-400 text-left">Awaiting Simulation Signal Injection...</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.6em] text-slate-400 text-center">Awaiting Simulation Signal Injection...</p>
               </div>
             )}
           </div>
@@ -169,9 +179,21 @@ const SliderControl = ({ label, value, onChange, icon, desc }: any) => (
     <input 
       type="range" 
       value={value} 
+      min="1"
+      max="100"
       onChange={(e) => onChange(Number(e.target.value))} 
       className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full appearance-none accent-brand cursor-pointer outline-none shadow-inner" 
     />
+  </div>
+);
+
+const StatusCard = ({ label, value, icon }: any) => (
+  <div className="p-6 bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+     <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">{icon}</div>
+     <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-base font-bold text-slate-900 dark:text-white font-outfit">{value}</p>
+     </div>
   </div>
 );
 

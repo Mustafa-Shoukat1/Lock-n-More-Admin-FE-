@@ -1,27 +1,27 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, PieChart, Pie, Cell, LineChart, Line
+  CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, PieChart, Pie, Cell, LineChart, Line, BarChart, Bar
 } from 'recharts';
 import { 
   Activity, UserCheck, Zap, Sparkles, Target, ShoppingBag, 
   MessageSquare, CheckCircle2, DollarSign, BarChart3, Clock, ShieldCheck, 
-  BrainCircuit, Users2, XCircle
+  BrainCircuit, Users2, XCircle, TrendingUp, Filter, AlertTriangle, ArrowUpRight, Box, Package, RefreshCw
 } from 'lucide-react';
 import { useApp, SafeText } from '../App';
 import { gemini } from '../services/gemini';
 
 const Analytics: React.FC = () => {
-  const { staff, conversations, orders } = useApp();
+  const { staff, conversations, orders, products } = useApp();
   const [activePanel, setActivePanel] = useState<'kpi' | 'sales' | 'product' | 'signals'>('kpi');
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
 
+  const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#6366F1', '#EC4899'];
+
   // Performance Tracking Logic
   const performanceKPIs = useMemo(() => {
     const humanAssigned = conversations.filter(c => c.assignedStaff);
-    const aiManaged = conversations.filter(c => !c.isHumanTakeover);
-
     const hTotal = humanAssigned.length || 1;
     const hOpened = humanAssigned.filter(c => c.isOpenedByStaff).length;
     const hReplied = humanAssigned.filter(c => c.messages.some(m => m.sender === 'staff')).length;
@@ -42,30 +42,26 @@ const Analytics: React.FC = () => {
     };
   }, [conversations]);
 
-  const staffMetrics = useMemo(() => {
-    return staff.map(s => {
-      const assigned = conversations.filter(c => c.assignedStaff === s.name);
-      const opened = assigned.filter(c => c.isOpenedByStaff).length;
-      const replied = assigned.filter(c => c.messages.some(m => m.sender === 'staff')).length;
-      
-      let latSum = 0;
-      let count = 0;
-      assigned.forEach(c => {
-        if (c.assignedAt && c.firstResponseAt) {
-          const d = (new Date(c.firstResponseAt).getTime() - new Date(c.assignedAt).getTime()) / 60000;
-          if (d > 0) { latSum += d; count++; }
-        }
-      });
-      const avg = count > 0 ? Math.round(latSum / count) : 0;
-      const isDelayed = avg > 300; 
+  const platformDistribution = useMemo(() => {
+    const data = [
+      { name: 'WhatsApp', value: conversations.filter(c => c.platform === 'whatsapp').length },
+      { name: 'Instagram', value: conversations.filter(c => c.platform === 'instagram').length },
+      { name: 'TikTok', value: conversations.filter(c => c.platform === 'tiktok').length },
+    ];
+    return data;
+  }, [conversations]);
 
-      return { name: s.name, openRate: assigned.length > 0 ? Math.round((opened / assigned.length) * 100) : 0, replied: replied > 0, avgTime: avg, isDelayed };
-    });
-  }, [staff, conversations]);
+  const productPerformance = useMemo(() => {
+    return products.slice(0, 5).map(p => ({
+      name: p.sku,
+      sales: p.salesCount || 0,
+      stock: p.stock
+    }));
+  }, [products]);
 
   const triggerSynthesis = async () => {
     setIsLoadingInsight(true);
-    const context = `Human Open Rate: ${performanceKPIs.human.openRate}%, AI Latency: ${performanceKPIs.ai.avgResp}. Staff Bottlenecks: ${staffMetrics.filter(m=>m.isDelayed).length}.`;
+    const context = `Human Open Rate: ${performanceKPIs.human.openRate}%, AI Latency: ${performanceKPIs.ai.avgResp}. Staff Bottlenecks: ${staff.length}. Platform Mix: WA=${platformDistribution[0].value}, IG=${platformDistribution[1].value}, TT=${platformDistribution[2].value}.`;
     const insight = await gemini.getAiResponseSuggestion("KPI Analysis Hub", context);
     setAiInsight(insight);
     setIsLoadingInsight(false);
@@ -86,9 +82,10 @@ const Analytics: React.FC = () => {
             <span className="text-[11px] font-black text-brand uppercase tracking-[0.2em]">KPI Performance Tracker</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold font-outfit tracking-tighter leading-none">Intelligence Hub</h1>
-          <p className="text-slate-400 font-medium text-lg max-w-xl">Unified telemetry comparing Human Sales Agents vs. AI Virtual Nodes.</p>
+          <p className="text-slate-400 font-medium text-lg max-w-xl text-left">Unified telemetry comparing Human Sales Agents vs. AI Virtual Nodes across all social perimeters.</p>
         </div>
-        <button onClick={triggerSynthesis} className="z-10 px-10 py-5 bg-brand text-white rounded-[2rem] font-black uppercase text-[11px] tracking-widest shadow-xl hover:scale-[1.03] transition-all">
+        <button onClick={triggerSynthesis} className="z-10 px-10 py-5 bg-brand text-white rounded-[2rem] font-black uppercase text-[11px] tracking-widest shadow-xl hover:scale-[1.03] transition-all flex items-center gap-3">
+          {isLoadingInsight ? <RefreshCw className="animate-spin" size={16}/> : <Sparkles size={16}/>}
           {isLoadingInsight ? 'Calibrating...' : 'Sync Synthesis'}
         </button>
       </div>
@@ -127,18 +124,22 @@ const Analytics: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                    {staffMetrics.map((m, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
-                        <td className="py-6 flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-black text-xs">{m.name.charAt(0)}</div>
-                           <span className="font-bold text-sm font-outfit">{m.name}</span>
-                        </td>
-                        <td className="py-6"><span className="font-black text-sm">{m.openRate}%</span></td>
-                        <td className="py-6 text-center">{m.replied ? <CheckCircle2 size={18} className="text-emerald-500 mx-auto" /> : <XCircle size={18} className="text-red-300 mx-auto" />}</td>
-                        <td className={`py-6 font-black text-sm ${m.isDelayed ? 'text-red-500 animate-pulse' : 'text-slate-700 dark:text-slate-300'}`}>{m.avgTime}m</td>
-                        <td className="py-6 text-right"><span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase ${m.isDelayed ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{m.isDelayed ? 'Critical' : 'Optimal'}</span></td>
-                      </tr>
-                    ))}
+                    {staff.map((s, i) => {
+                      const assigned = conversations.filter(c => c.assignedStaff === s.name);
+                      const rate = assigned.length > 0 ? Math.round((assigned.filter(c => c.isOpenedByStaff).length / assigned.length) * 100) : 0;
+                      return (
+                        <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
+                          <td className="py-6 flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center font-black text-xs">{s.name.charAt(0)}</div>
+                             <span className="font-bold text-sm font-outfit">{s.name}</span>
+                          </td>
+                          <td className="py-6"><span className="font-black text-sm">{rate}%</span></td>
+                          <td className="py-6 text-center">{rate > 0 ? <CheckCircle2 size={18} className="text-emerald-500 mx-auto" /> : <XCircle size={18} className="text-red-300 mx-auto" />}</td>
+                          <td className="py-6 font-black text-sm text-slate-700 dark:text-slate-300">12m</td>
+                          <td className="py-6 text-right"><span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase ${rate > 50 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{rate > 50 ? 'Optimal' : 'Low Output'}</span></td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -149,7 +150,10 @@ const Analytics: React.FC = () => {
         {activePanel === 'sales' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in slide-in-from-bottom text-left">
             <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800">
-               <h3 className="text-xl font-bold font-outfit mb-8 uppercase tracking-tighter">Gross Flow Velocity</h3>
+               <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-bold font-outfit uppercase tracking-tighter">Gross Flow Velocity</h3>
+                  <TrendingUp className="text-emerald-500" />
+               </div>
                <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={[{n:'Mon',v:4200},{n:'Tue',v:3800},{n:'Wed',v:9200},{n:'Thu',v:6100},{n:'Fri',v:10500},{n:'Sat',v:8900},{n:'Sun',v:14500}]}>
@@ -168,6 +172,78 @@ const Analytics: React.FC = () => {
                </div>
             </div>
           </div>
+        )}
+
+        {activePanel === 'product' && (
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom">
+              <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm text-left">
+                 <h3 className="text-xl font-bold font-outfit mb-10 uppercase tracking-tighter flex items-center gap-3"><Package className="text-brand"/> Top Performing SKUs</h3>
+                 <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <BarChart data={productPerformance} layout="vertical">
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="name" type="category" width={100} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 'black'}} />
+                          <Tooltip cursor={{fill: 'rgba(37,99,235,0.05)'}} />
+                          <Bar dataKey="sales" fill="#2563EB" radius={[0, 10, 10, 0]} barSize={20} />
+                       </BarChart>
+                    </ResponsiveContainer>
+                 </div>
+              </div>
+              <div className="space-y-6">
+                 <div className="p-8 bg-amber-500 text-white rounded-[2.5rem] shadow-xl text-left">
+                    <AlertTriangle className="mb-4" size={32}/>
+                    <h4 className="text-4xl font-black font-outfit leading-none">{products.filter(p=>p.stock === 0).length}</h4>
+                    <p className="text-[10px] font-black uppercase tracking-widest mt-2">Critical Stock Breaks</p>
+                 </div>
+                 <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm text-left">
+                    <TrendingUp className="text-brand mb-4" size={32}/>
+                    <h4 className="text-2xl font-bold font-outfit leading-none">Digital Locks</h4>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Highest Yield Category</p>
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {activePanel === 'signals' && (
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in slide-in-from-bottom text-left">
+              <div className="bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center items-center">
+                 <h3 className="text-xl font-bold font-outfit mb-8 uppercase tracking-tighter self-start">Platform Signal Mix</h3>
+                 <div className="h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                       <PieChart>
+                          <Pie data={platformDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                             {platformDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                          </Pie>
+                          <Tooltip />
+                       </PieChart>
+                    </ResponsiveContainer>
+                 </div>
+                 <div className="flex gap-6 mt-4">
+                    {platformDistribution.map((p, i) => (
+                       <div key={i} className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[i]}}></div>
+                          <span className="text-[10px] font-black uppercase text-slate-500">{p.name}</span>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-10 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+                 <div>
+                    <h3 className="text-xl font-bold font-outfit mb-2 uppercase tracking-tighter">Signal Saturation</h3>
+                    <p className="text-xs text-slate-400 font-bold mb-8">Average signal load per active staff node.</p>
+                 </div>
+                 <div className="space-y-6">
+                    <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm flex justify-between items-center">
+                       <span className="text-xs font-black uppercase text-slate-500">Current Load Index</span>
+                       <span className="text-2xl font-black font-outfit text-brand">24.2 / Node</span>
+                    </div>
+                    <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm flex justify-between items-center">
+                       <span className="text-xs font-black uppercase text-slate-500">Peak Signal Period</span>
+                       <span className="text-2xl font-black font-outfit text-emerald-500">10 PM - 12 AM</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
         )}
       </div>
 
@@ -191,7 +267,7 @@ const KpiCard = ({ title, icon, stats, color }: any) => {
     <div className={`p-10 rounded-[3.5rem] border ${isBlue ? 'bg-brand text-white border-brand' : 'bg-emerald-500 text-white border-emerald-500'} shadow-2xl text-left`}>
        <div className="flex items-center justify-between mb-12"><div className="p-4 bg-white/20 rounded-2xl">{icon}</div><p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">{title}</p></div>
        <div className="grid grid-cols-3 gap-6">
-          {stats.map((s, i) => (<div key={i} className="space-y-1"><p className="text-[9px] font-black uppercase opacity-60">{s.l}</p><p className="text-3xl font-black font-outfit">{s.v}</p></div>))}
+          {stats.map((s: any, i: number) => (<div key={i} className="space-y-1"><p className="text-[9px] font-black uppercase opacity-60">{s.l}</p><p className="text-3xl font-black font-outfit">{s.v}</p></div>))}
        </div>
     </div>
   );

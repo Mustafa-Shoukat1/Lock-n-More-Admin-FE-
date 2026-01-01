@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Search, ChevronDown, Moon, Sun, LogOut, Settings, Users, Camera, X, MessageCircle, AlertCircle, RefreshCw, Menu, ShieldCheck, Zap } from 'lucide-react';
 import { useApp } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { WhatsAppIcon, InstagramIcon, TikTokIcon } from './Icons';
 
 const Header: React.FC = () => {
   const { lang, t, searchQuery, setSearchQuery, activeUser, setIsLoggedIn, setActiveUser, notifications, setNotifications, setSidebarOpen } = useApp();
@@ -69,6 +70,29 @@ const Header: React.FC = () => {
       </div>
       
       <div className="flex items-center gap-2 sm:gap-5">
+        {/* Perimeter Status Hub */}
+        <div className="hidden lg:flex items-center gap-4 px-6 h-10 bg-slate-100 dark:bg-slate-900/50 rounded-full border border-slate-200 dark:border-slate-800">
+           <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Signals</span>
+           </div>
+           <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
+           <div className="flex items-center gap-4">
+              <div className="group relative flex items-center">
+                <WhatsAppIcon size={18} className="opacity-100 cursor-pointer hover:scale-110 transition-transform" />
+                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-slate-900"></span>
+              </div>
+              <div className="group relative flex items-center">
+                <InstagramIcon size={18} className="opacity-100 cursor-pointer hover:scale-110 transition-transform" />
+                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-slate-900"></span>
+              </div>
+              <div className="group relative flex items-center">
+                <TikTokIcon size={18} className="opacity-100 cursor-pointer hover:scale-110 transition-transform text-slate-900 dark:text-white" />
+                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-slate-900"></span>
+              </div>
+           </div>
+        </div>
+
         <button 
           onClick={toggleTheme} 
           className="relative hidden sm:flex items-center h-10 w-20 px-1 bg-slate-200 dark:bg-slate-800 rounded-full transition-all duration-500 border border-slate-300/50 dark:border-slate-700/50 hover:shadow-lg"
