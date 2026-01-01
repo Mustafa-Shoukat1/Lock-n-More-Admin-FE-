@@ -24,6 +24,9 @@ export interface Conversation {
   isHumanTakeover: boolean;
   priority: 'low' | 'medium' | 'high';
   assignedStaff?: string;
+  assignedAt?: string; // ISO Timestamp for tracking
+  firstResponseAt?: string; // ISO Timestamp for tracking
+  isOpenedByStaff?: boolean;
   status: 'active' | 'pending' | 'closed';
   messages: Message[];
 }
@@ -46,14 +49,6 @@ export interface User {
   active: boolean;
   lastLogin: string;
   avatar?: string;
-}
-
-export interface Session {
-  id: string;
-  userId: string;
-  device: string;
-  ip: string;
-  lastSeen: string;
 }
 
 export interface AiSettings {

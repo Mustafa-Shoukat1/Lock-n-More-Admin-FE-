@@ -1,3 +1,4 @@
+
 import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
@@ -15,7 +16,7 @@ import { Language, Product, Conversation, User as UserType, AiSettings, Message 
 import { translations } from './i18n';
 import { LayoutDashboard, MessageSquare, Package, BookOpen, ShoppingCart } from 'lucide-react';
 
-const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3'; // High-quality 'ding'
+const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
 
 interface Order {
   id: string;
@@ -46,8 +47,9 @@ interface AppContextType {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   aiSettings: AiSettings;
   setAiSettings: React.Dispatch<React.SetStateAction<AiSettings>>;
-  sendMessage: (convId: string, text: string, sender: 'staff' | 'ai', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
+  sendMessage: (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
   assignStaff: (convId: string, staffName: string) => void;
+  markAsOpened: (convId: string) => void;
   generateInvoice: (convId: string, amount: number) => void;
   simulateLead: () => void;
   isSidebarOpen: boolean;
@@ -61,35 +63,6 @@ export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) throw new Error("useApp must be used within AppProvider");
   return context;
-};
-
-const BottomNav: React.FC = () => {
-  const { t } = useApp();
-  const navItems = [
-    { name: t('dashboard'), icon: <LayoutDashboard size={20} />, path: '/dashboard' },
-    { name: t('inbox'), icon: <MessageSquare size={20} />, path: '/inbox' },
-    { name: t('products'), icon: <Package size={20} />, path: '/products' },
-    { name: 'Docs', icon: <BookOpen size={20} />, path: '/docs' },
-  ];
-
-  return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-surface border-t border-slate-200 dark:border-slate-800 flex items-center justify-around px-2 pb-safe z-[90] shadow-md">
-      {navItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center flex-1 py-1 ${
-              isActive ? 'text-brand font-black' : 'text-slate-400'
-            }`
-          }
-        >
-          <div className="mb-0.5">{item.icon}</div>
-          <span className="text-[9px] uppercase tracking-tighter">{item.name}</span>
-        </NavLink>
-      ))}
-    </div>
-  );
 };
 
 const App: React.FC = () => {
@@ -112,148 +85,129 @@ const App: React.FC = () => {
   });
 
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'High Priority Lead', message: 'Beh Chen is asking about biometric locks for sliding doors.', type: 'lead', time: '2m ago', read: false },
-    { id: 2, title: 'Shopify Sync Success', message: 'All 240 product nodes synchronized.', type: 'system', time: '1h ago', read: false },
+    { id: 1, title: 'High Priority Lead', message: 'Beh Chen is asking about biometric locks.', type: 'lead', time: '2m ago', read: false },
   ]);
 
   const [products, setProducts] = useState<Product[]>([
     { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200' },
-    { id: '2', name: 'Slim-Fit Deadbolt X1', price: 899.00, stock: 12, category: 'Deadbolts', sku: 'SD-X1-BL', image: 'https://images.unsplash.com/photo-1510003307521-f09516640925?auto=format&fit=crop&q=80&w=200' },
   ]);
 
   const [conversations, setConversations] = useState<Conversation[]>([
     { id: '1', customerName: 'Beh Chen', customerPhone: '+60 12-345 6789', platform: 'whatsapp', lastMessage: 'Biometric locks for sliding doors?', lastTimestamp: '10:42 AM', unreadCount: 2, isHumanTakeover: false, priority: 'high', status: 'active', messages: [
-      { id: 'm1', sender: 'customer', text: 'Hi, I saw your ad on Facebook.', timestamp: '10:40 AM', type: 'text' },
-      { id: 'm2', sender: 'ai', text: 'Hello Beh! I am the TOTO assistant. How can I help you today?', timestamp: '10:41 AM', type: 'text', status: 'read' },
-      { id: 'm3', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
+      { id: 'm1', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' },
     ] },
   ]);
 
   const [staff, setStaff] = useState<UserType[]>([
     { id: 'staff1', name: 'Mustafa S.', email: 'admin@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
     { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
-    { id: 'staff3', name: 'Agent Daniel', email: 'daniel@locksnmore.com', role: 'agent', active: true, lastLogin: '12m ago', avatar: 'https://i.pravatar.cc/150?u=daniel' },
   ]);
 
-  const [orders, setOrders] = useState<Order[]>([
-    { id: '#TOTO-1024', customer: 'Beh Chen', status: 'fulfilled', amount: 1299.00, date: 'Today, 10:45 AM', platform: 'whatsapp' },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  const prevNotificationCount = useRef(notifications.length);
-
-  const playNotificationSound = () => {
-    const audio = new Audio(NOTIFICATION_SOUND_URL);
-    audio.volume = 0.6;
-    audio.play().catch(e => console.warn("Audio playback failed:", e));
-  };
-
-  // Simulate read status updates for sent messages
+  // Simulation: Progressively mark staff/ai messages as Delivered and then Read
   useEffect(() => {
     const interval = setInterval(() => {
       setConversations(prev => prev.map(conv => ({
         ...conv,
         messages: conv.messages.map(msg => {
-          if (msg.sender !== 'customer') {
-            if (msg.status === 'sent') return { ...msg, status: 'delivered' };
-            if (msg.status === 'delivered') return { ...msg, status: 'read' };
+          if (msg.sender !== 'customer' && msg.status !== 'read') {
+            const nextStatus = msg.status === 'sent' ? 'delivered' : 'read';
+            // Random chance to progress status
+            return Math.random() > 0.7 ? { ...msg, status: nextStatus as any } : msg;
           }
           return msg;
         })
       })));
-    }, 5000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (notifications.length > prevNotificationCount.current) {
-      const latest = notifications[0];
-      if (latest && !latest.read) playNotificationSound();
-    }
-    prevNotificationCount.current = notifications.length;
-  }, [notifications]);
+  const playNotificationSound = () => {
+    const audio = new Audio(NOTIFICATION_SOUND_URL);
+    audio.volume = 0.5;
+    audio.play().catch(e => console.warn("Audio failed:", e));
+  };
 
-  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMessage: Message = {
-      id: Math.random().toString(36).substr(2, 9),
-      sender,
-      text,
-      timestamp,
-      type,
-      mediaUrl,
-      status: 'sent'
-    };
+  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
+    const now = new Date();
+    const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    setConversations(prev => prev.map(c => {
+      if (c.id === convId) {
+        const isResponse = sender === 'staff' || sender === 'ai';
+        const firstResponseAt = isResponse && !c.firstResponseAt ? now.toISOString() : c.firstResponseAt;
+        
+        return {
+          ...c,
+          messages: [...c.messages, { 
+            id: Math.random().toString(36).substr(2, 9), 
+            sender, 
+            text, 
+            timestamp, 
+            type, 
+            mediaUrl, 
+            status: isResponse ? 'sent' : undefined 
+          }],
+          lastMessage: type === 'voice' ? 'Voice Message' : text,
+          lastTimestamp: timestamp,
+          unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0,
+          firstResponseAt
+        };
+      }
+      return c;
+    }));
+  };
 
+  const assignStaff = (convId: string, staffName: string) => {
     setConversations(prev => prev.map(c => 
-      c.id === convId 
-        ? { ...c, messages: [...c.messages, newMessage], lastMessage: type === 'voice' ? 'Sent a voice message' : text, lastTimestamp: timestamp, unreadCount: 0 }
-        : c
+      c.id === convId ? { 
+        ...c, 
+        assignedStaff: staffName, 
+        assignedAt: new Date().toISOString(), 
+        isHumanTakeover: true,
+        isOpenedByStaff: false 
+      } : c
+    ));
+  };
+
+  const markAsOpened = (convId: string) => {
+    setConversations(prev => prev.map(c => 
+      c.id === convId ? { ...c, isOpenedByStaff: true, unreadCount: 0 } : c
     ));
   };
 
   const generateInvoice = (convId: string, amount: number) => {
-    const activeChat = conversations.find(c => c.id === convId);
-    if (!activeChat) return;
-
-    const invoiceId = `#TOTO-${1025 + orders.length}`;
-    const newOrder: Order = {
-      id: invoiceId,
-      customer: activeChat.customerName,
-      status: 'pending',
-      amount: amount,
-      date: 'Just Now',
-      platform: activeChat.platform
-    };
-
-    setOrders(prev => [newOrder, ...prev]);
-    sendMessage(convId, `Order generated! Secure Shopify Invoice Link: https://checkout.shopify.com/toto/${invoiceId}\nTotal: RM ${amount.toLocaleString()}`, 'staff');
-    
-    setNotifications(prev => [{
-      id: Date.now(),
-      title: 'Order Generated',
-      message: `Invoice ${invoiceId} for RM ${amount.toLocaleString()} sent to ${activeChat.customerName}.`,
-      type: 'system',
-      time: 'Just now',
-      read: false
-    }, ...prev]);
+    const id = `#TOTO-${Date.now().toString().slice(-6)}`;
+    setOrders(prev => [{ id, customer: 'Customer', status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...prev]);
+    sendMessage(convId, `Order ID ${id} generated! Please authorize payment: https://checkout.toto.com/${id}`, 'staff');
   };
 
   const simulateLead = () => {
-    const names = ['Wei Lung', 'Aisha', 'Ramesh', 'Kevin Tan', 'Siti'];
-    const platforms: any[] = ['whatsapp', 'instagram', 'tiktok'];
-    const name = names[Math.floor(Math.random() * names.length)];
-    const platform = platforms[Math.floor(Math.random() * platforms.length)];
-    const id = (conversations.length + 1).toString();
-
+    const id = Date.now().toString();
     const newConv: Conversation = {
       id,
-      customerName: name,
-      customerPhone: '+60 1x-xxx xxxx',
-      platform,
-      lastMessage: 'I want to ask about your face-ID locks.',
+      customerName: 'Aisha Malik',
+      customerPhone: '+6011-2233 4455',
+      platform: 'whatsapp',
+      lastMessage: 'Interested in the A100 Pro model.',
       lastTimestamp: 'Just Now',
       unreadCount: 1,
       isHumanTakeover: false,
       priority: 'high',
       status: 'active',
-      messages: [{ id: Math.random().toString(), sender: 'customer', text: 'I want to ask about your face-ID locks.', timestamp: 'Just Now', type: 'text' }]
+      messages: [{ id: 'm' + Date.now(), sender: 'customer', text: 'Interested in the A100 Pro model.', timestamp: 'Just Now', type: 'text' }]
     };
-
     setConversations(prev => [newConv, ...prev]);
+    playNotificationSound();
     setNotifications(prev => [{
       id: Date.now(),
-      title: 'New Lead Node',
-      message: `${name} initiated a thread via ${platform.toUpperCase()}.`,
+      title: 'New High Priority Signal',
+      message: 'Aisha Malik is inquiring about A100 Pro.',
       type: 'lead',
       time: 'Just now',
       read: false
     }, ...prev]);
-  };
-
-  const assignStaff = (convId: string, staffName: string) => {
-    setConversations(prev => prev.map(c => 
-      c.id === convId ? { ...c, assignedStaff: staffName, isHumanTakeover: true } : c
-    ));
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
@@ -262,7 +216,7 @@ const App: React.FC = () => {
     <AppContext.Provider value={{ 
       lang, setLang, t, searchQuery, setSearchQuery, activeUser, setActiveUser,
       notifications, setNotifications, products, setProducts, conversations, setConversations,
-      staff, setStaff, orders, setOrders, aiSettings, setAiSettings, sendMessage, assignStaff, generateInvoice,
+      staff, setStaff, orders, setOrders, aiSettings, setAiSettings, sendMessage, assignStaff, markAsOpened, generateInvoice,
       simulateLead, isSidebarOpen, setSidebarOpen, playNotificationSound
     }}>
       <Router>
@@ -284,7 +238,6 @@ const App: React.FC = () => {
                 <Route path="/docs" element={<Documentation />} />
               </Routes>
             </main>
-            <BottomNav />
           </div>
         </div>
       </Router>
