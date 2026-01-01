@@ -3,12 +3,13 @@ import React, { useState, useMemo } from 'react';
 import { 
   CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis
 } from 'recharts';
-import { DollarSign, Activity, Target, Zap, MessageSquare, Smartphone, BarChart3, Calendar, ArrowUpRight, AlertCircle, History, ShieldCheck, RefreshCw, Cpu, BrainCircuit, ShieldAlert, CheckCircle } from 'lucide-react';
+import { DollarSign, Activity, Target, Zap, MessageSquare, Smartphone, BarChart3, Calendar, ArrowUpRight, AlertCircle, History, ShieldCheck, RefreshCw, Cpu, BrainCircuit, ShieldAlert, CheckCircle, Globe, Link2, Unlink2 } from 'lucide-react';
 import { useApp, SafeText } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
 
 const Dashboard: React.FC = () => {
-  const { conversations, orders, simulateLead, products, systemLogs } = useApp();
+  const { conversations, orders, simulateLead, products, systemLogs, integrationSettings } = useApp();
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
 
@@ -87,35 +88,44 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white font-outfit tracking-tight">Revenue Velocity</h3>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Authorized transaction flow</p>
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+          <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white font-outfit tracking-tight">Revenue Velocity</h3>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Authorized transaction flow</p>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <BarChart3 size={20} className="text-brand" />
+              </div>
             </div>
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-              <BarChart3 size={20} className="text-brand" />
+            <div className="h-64 sm:h-80 -ml-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={salesData}>
+                  <defs>
+                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.3} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '700'}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '700'}} dx={-5} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: '16px', color: '#fff' }}
+                    itemStyle={{ fontSize: '10px', fontWeight: '800' }}
+                  />
+                  <Area type="monotone" dataKey="sales" stroke="#2563EB" fillOpacity={1} fill="url(#colorSales)" strokeWidth={4} dot={{ r: 5, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div className="h-64 sm:h-80 -ml-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25}/>
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.3} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '700'}} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '700'}} dx={-5} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: '16px', color: '#fff' }}
-                  itemStyle={{ fontSize: '10px', fontWeight: '800' }}
-                />
-                <Area type="monotone" dataKey="sales" stroke="#2563EB" fillOpacity={1} fill="url(#colorSales)" strokeWidth={4} dot={{ r: 5, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} />
-              </AreaChart>
-            </ResponsiveContainer>
+
+          {/* Gateway Status Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+             <GatewayCard type="WhatsApp" active={integrationSettings.whatsappEnabled} icon={<WhatsAppIcon size={20}/>} />
+             <GatewayCard type="Instagram" active={integrationSettings.instagramEnabled} icon={<InstagramIcon size={20}/>} />
+             <GatewayCard type="TikTok" active={integrationSettings.tiktokEnabled} icon={<TikTokIcon size={20}/>} />
           </div>
         </div>
 
@@ -189,5 +199,18 @@ const DashMetric = ({ label, value, trend, icon, color }: any) => {
     </div>
   );
 };
+
+const GatewayCard = ({ type, active, icon }: any) => (
+  <div className={`p-6 rounded-[2rem] border flex flex-col gap-5 transition-all ${active ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800' : 'bg-slate-50 dark:bg-slate-900/30 border-transparent opacity-50'}`}>
+     <div className="flex items-center justify-between">
+        <div className={`p-3 rounded-xl ${active ? 'bg-brand/10 text-brand' : 'bg-slate-200 dark:bg-slate-800 text-slate-400'}`}>{icon}</div>
+        {active ? <Link2 size={14} className="text-emerald-500"/> : <Unlink2 size={14} className="text-slate-400"/>}
+     </div>
+     <div>
+        <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{type} Perimeter</p>
+        <p className={`text-xs font-bold mt-1 ${active ? 'text-emerald-500' : 'text-slate-500'}`}>{active ? 'Authorized & Live' : 'Node Disconnected'}</p>
+     </div>
+  </div>
+);
 
 export default Dashboard;

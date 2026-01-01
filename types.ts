@@ -60,3 +60,10 @@ export interface AiSettings {
   responseLength: number;
   creativity: number;
 }
+
+export interface IntegrationSettings {
+  whatsappEnabled: boolean;
+  instagramEnabled: boolean;
+  tiktokEnabled: boolean;
+  shopifySync: boolean;
+}

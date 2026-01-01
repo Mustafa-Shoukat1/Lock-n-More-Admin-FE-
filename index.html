@@ -9,36 +9,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #F3F4F6;
+            --bg-primary: #F8FAFC;
             --bg-surface: #FFFFFF;
             --bg-sidebar: #FFFFFF;
-            --text-main: #111827;
-            --text-muted: #6B7280;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
             --color-brand: #2563EB;
-            --color-accent: #0EA5E9;
+            --color-accent: #3B82F6;
             --color-success: #10B981;
             --color-warning: #F59E0B;
-            --border-color: #E5E7EB;
+            --border-color: #E2E8F0;
         }
 
         .dark {
-            --bg-primary: #0F172A;
-            --bg-surface: #1E293B;
-            --bg-sidebar: #0B1120;
-            --text-main: #F9FAFB;
-            --text-muted: #9CA3AF;
+            --bg-primary: #020617;
+            --bg-surface: #0F172A;
+            --bg-sidebar: #020617;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
             --color-brand: #3B82F6;
-            --color-accent: #06B6D4;
+            --color-accent: #60A5FA;
             --color-success: #34D399;
             --color-warning: #FBBF24;
-            --border-color: #334155;
+            --border-color: #1E293B;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-main);
-            transition: background-color 0.3s ease;
+            transition: background-color 0.4s ease;
+            -webkit-font-smoothing: antialiased;
         }
 
         h1, h2, h3, .font-outfit {
@@ -46,18 +47,28 @@
         }
         
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
+            height: 5px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: var(--text-muted);
+            background: #CBD5E1;
             border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
         }
 
         .transition-all {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Animated grid background for dashboard */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: radial-gradient(circle, var(--border-color) 1px, transparent 1px);
         }
     </style>
     <script>
@@ -95,7 +106,7 @@
 }
 </script>
 </head>
-<body>
+<body class="bg-grid">
     <div id="root"></div>
 </body>
 </html>

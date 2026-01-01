@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from './Icons';
 
 const Header: React.FC = () => {
-  const { lang, t, searchQuery, setSearchQuery, activeUser, setIsLoggedIn, setActiveUser, notifications, setNotifications, setSidebarOpen } = useApp();
+  const { lang, t, searchQuery, setSearchQuery, activeUser, setIsLoggedIn, setActiveUser, notifications, setNotifications, setSidebarOpen, integrationSettings } = useApp();
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -46,16 +46,16 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="h-20 bg-surface/70 dark:bg-slate-950/70 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between px-4 sm:px-10 sticky top-0 z-[80] transition-all duration-500 shadow-sm">
+    <header className="h-20 bg-surface/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-10 sticky top-0 z-[80] transition-all duration-500 shadow-sm">
       <div className="flex items-center gap-2 sm:gap-6 flex-1">
         <button 
           onClick={() => setSidebarOpen(true)}
-          className="p-2 -ml-2 text-slate-500 dark:text-slate-400 md:hidden hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+          className="p-2 -ml-2 text-slate-500 dark:text-slate-400 md:hidden hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
         >
           <Menu size={24} />
         </button>
 
-        <div className="relative w-full max-w-[200px] sm:max-w-sm lg:max-w-md block group">
+        <div className="relative w-full max-w-[120px] sm:max-w-sm lg:max-w-md block group">
           <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
             <Search size={16} className="text-slate-400 group-focus-within:text-brand transition-all duration-300" />
           </div>
@@ -63,32 +63,31 @@ const Header: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 sm:pl-12 pr-4 py-2 sm:py-3 border border-slate-200 dark:border-slate-800 rounded-[1.25rem] bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-brand/10 focus:border-brand focus:bg-white dark:focus:bg-slate-900 transition-all text-xs sm:text-sm font-semibold shadow-sm"
+            className="block w-full pl-9 sm:pl-12 pr-4 py-2 sm:py-3 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-brand/10 focus:border-brand focus:bg-white dark:focus:bg-slate-900 transition-all text-xs sm:text-sm font-semibold shadow-sm"
             placeholder={t('searchPlaceholder')}
           />
         </div>
       </div>
       
-      <div className="flex items-center gap-2 sm:gap-5">
-        {/* Perimeter Status Hub */}
-        <div className="hidden lg:flex items-center gap-4 px-6 h-10 bg-slate-100 dark:bg-slate-900/50 rounded-full border border-slate-200 dark:border-slate-800">
-           <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">Signals</span>
+      <div className="flex items-center gap-1.5 sm:gap-5">
+        {/* Perimeter Status Hub - Responsive and High Contrast */}
+        <div className="flex items-center gap-1.5 sm:gap-4 px-2 sm:px-6 h-10 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
+           <div className="flex items-center gap-1 sm:gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${Object.values(integrationSettings).some(v => v) ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+              <span className="hidden lg:inline text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                {Object.values(integrationSettings).some(v => v) ? 'Live' : 'Standby'}
+              </span>
            </div>
-           <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
-           <div className="flex items-center gap-4">
-              <div className="group relative flex items-center">
-                <WhatsAppIcon size={18} className="opacity-100 cursor-pointer hover:scale-110 transition-transform" />
-                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-slate-900"></span>
+           <div className="hidden lg:block h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+           <div className="flex items-center gap-2 sm:gap-4">
+              <div className={`group relative flex items-center transition-all ${integrationSettings.whatsappEnabled ? 'opacity-100' : 'opacity-20 grayscale'}`} title="WhatsApp Status">
+                <WhatsAppIcon size={14} className="sm:size-4 cursor-pointer hover:scale-110 transition-transform" />
               </div>
-              <div className="group relative flex items-center">
-                <InstagramIcon size={18} className="opacity-100 cursor-pointer hover:scale-110 transition-transform" />
-                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-slate-900"></span>
+              <div className={`group relative flex items-center transition-all ${integrationSettings.instagramEnabled ? 'opacity-100' : 'opacity-20 grayscale'}`} title="Instagram Status">
+                <InstagramIcon size={14} className={`sm:size-4 cursor-pointer hover:scale-110 transition-transform ${integrationSettings.instagramEnabled ? 'animate-pulse' : ''}`} />
               </div>
-              <div className="group relative flex items-center">
-                <TikTokIcon size={18} className="opacity-100 cursor-pointer hover:scale-110 transition-transform text-slate-900 dark:text-white" />
-                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-slate-900"></span>
+              <div className={`group relative flex items-center transition-all ${integrationSettings.tiktokEnabled ? 'opacity-100' : 'opacity-20 grayscale'}`} title="TikTok Status">
+                <TikTokIcon size={14} className="sm:size-4 cursor-pointer hover:scale-110 transition-transform text-slate-900 dark:text-white" />
               </div>
            </div>
         </div>
@@ -105,14 +104,14 @@ const Header: React.FC = () => {
         <div className="relative" ref={notificationRef}>
           <button 
             onClick={() => setShowNotifications(!showNotifications)} 
-            className={`p-2 sm:p-3 rounded-2xl bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-brand transition-all relative border border-slate-200 dark:border-slate-800 shadow-sm ${showNotifications ? 'ring-2 ring-brand/20 border-brand/50' : 'hover:scale-105'}`}
+            className={`p-2 sm:p-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-brand transition-all relative border border-slate-200 dark:border-slate-700 shadow-sm ${showNotifications ? 'ring-2 ring-brand/20 border-brand/50' : 'hover:scale-105'}`}
           >
             <Bell size={20} />
             {notifications.some(n => !n.read) && <span className="absolute top-2 right-2 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full"></span>}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-96 bg-surface dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-2 overflow-hidden ring-1 ring-black/10 animate-in slide-in-from-top-4 duration-300">
+            <div className="absolute right-0 mt-4 w-72 sm:w-96 bg-surface dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-2xl p-2 overflow-hidden ring-1 ring-black/10 animate-in slide-in-from-top-4 duration-300">
               <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-50 dark:border-slate-800">
                 <h4 className="font-bold text-lg font-outfit text-slate-900 dark:text-white">Signals</h4>
                 <button onClick={markAllRead} className="text-[10px] font-black text-brand uppercase tracking-widest hover:underline">Mark read</button>
@@ -145,12 +144,12 @@ const Header: React.FC = () => {
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-1 sm:mx-2"></div>
         
         <div className="relative" ref={profileRef}>
-          <div onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 sm:gap-4 cursor-pointer group p-1 sm:p-1.5 rounded-[1.5rem] hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+          <div onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-2 sm:gap-4 cursor-pointer group p-1 sm:p-1.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
             <div className="relative">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-brand/10 flex items-center justify-center text-brand font-black font-outfit shadow-sm border border-brand/20 overflow-hidden group-hover:scale-105 transition-all">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-brand/10 flex items-center justify-center text-brand font-black font-outfit shadow-sm border border-brand/20 overflow-hidden group-hover:scale-105 transition-all">
                 {activeUser?.avatar ? <img src={activeUser.avatar} className="w-full h-full object-cover" /> : activeUser?.name.charAt(0)}
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-950 rounded-full"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-950 rounded-full shadow-sm"></div>
             </div>
             <div className="hidden lg:block text-left">
               <p className="text-sm font-bold leading-none text-slate-900 dark:text-white font-outfit">{activeUser?.name}</p>

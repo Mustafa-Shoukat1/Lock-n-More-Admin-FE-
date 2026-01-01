@@ -1,26 +1,36 @@
 
-import React, { useState } from 'react';
-import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Trash2, Smartphone, Zap, Activity, Mail, LogOut, MailPlus, CheckCircle2, X, AlertTriangle, ShieldAlert, Key, Globe, Database } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Trash2, Smartphone, Zap, Activity, Mail, LogOut, MailPlus, CheckCircle2, X, AlertTriangle, ShieldAlert, Key, Globe, Database, RefreshCw } from 'lucide-react';
 import { useApp } from '../App';
 import { useNavigate } from 'react-router-dom';
+import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
 
 const Settings: React.FC = () => {
-  const { activeUser, setActiveUser, staff, setStaff, playNotificationSound, resetDatabase } = useApp();
+  const { activeUser, setActiveUser, staff, setStaff, playNotificationSound, resetDatabase, integrationSettings, setIntegrationSettings, addLog } = useApp();
   const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'integrations' | 'system'>('profile');
   const [showInviteModal, setShowInviteModal] = useState(false);
   const navigate = useNavigate();
   
   const [editName, setEditName] = useState(activeUser?.name || '');
   const [editEmail, setEditEmail] = useState(activeUser?.email || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState('agent');
 
-  const handleSaveProfile = () => {
-    setActiveUser({ ...activeUser, name: editName, email: editEmail });
-    alert("Super Admin profile successfully synchronized across the TOTO ecosystem.");
-  };
+  // Debounced auto-save for profile
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (editName !== activeUser?.name || editEmail !== activeUser?.email) {
+        setIsSaving(true);
+        setActiveUser({ ...activeUser!, name: editName, email: editEmail });
+        addLog('info', 'Identity Hub synchronized via auto-save.');
+        setTimeout(() => setIsSaving(false), 800);
+      }
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [editName, editEmail, activeUser, setActiveUser, addLog]);
 
   const handleInvite = () => {
     if (!inviteName || !inviteEmail) return;
@@ -37,16 +47,26 @@ const Settings: React.FC = () => {
     setShowInviteModal(false);
     setInviteName('');
     setInviteEmail('');
+    addLog('success', `New Node Authorization sent to ${inviteEmail}.`);
   };
 
   const deleteStaffNode = (id: string) => {
-    if (staff.find(s => s.id === id)?.role === 'super_admin') {
+    const target = staff.find(s => s.id === id);
+    if (target?.role === 'super_admin') {
       alert("Unauthorized: Primary Super Admin node cannot be decommissioned.");
       return;
     }
     if (window.confirm("Authorize permanent node decommissioning?")) {
       setStaff(staff.filter(s => s.id !== id));
+      addLog('warning', `Perimeter node ${target?.name} decommissioned.`);
     }
+  };
+
+  const toggleIntegration = (key: keyof typeof integrationSettings) => {
+    const newVal = !integrationSettings[key];
+    setIntegrationSettings({ ...integrationSettings, [key]: newVal });
+    // Fixed: Cast 'key' to string to fix TS error where 'replace' does not exist on 'string | number | symbol'
+    addLog('ai', `${(key as string).replace('Enabled', '').toUpperCase()} Perimeter Node ${newVal ? 'Activated' : 'Suspended'}.`);
   };
 
   return (
@@ -64,8 +84,12 @@ const Settings: React.FC = () => {
           <h1 className="text-4xl sm:text-6xl font-bold font-outfit tracking-tighter leading-none">Command Center</h1>
           <p className="text-slate-400 font-medium text-lg max-w-2xl">Mustafa Shoukat, your root-level perimeter controls are centralized here. Manage identity, team access, and system integrity.</p>
         </div>
-        <div className="relative z-10 flex gap-4 w-full lg:w-auto">
-           <button onClick={() => setShowInviteModal(true)} className="flex-1 lg:flex-none px-10 py-5 bg-brand text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-widest hover:scale-[1.05] transition-all shadow-xl shadow-brand/40 active:scale-95">Authorize New Node</button>
+        <div className="relative z-10 flex flex-col gap-4 w-full lg:w-auto">
+           <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-white/5 px-4 py-2 rounded-full mb-2">
+              {isSaving ? <RefreshCw size={12} className="animate-spin text-brand" /> : <CheckCircle2 size={12} className="text-emerald-500" />}
+              {isSaving ? 'Synchronizing Node...' : 'State Verified'}
+           </div>
+           <button onClick={() => setShowInviteModal(true)} className="px-10 py-5 bg-brand text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-widest hover:scale-[1.05] transition-all shadow-xl shadow-brand/40 active:scale-95">Authorize New Node</button>
         </div>
       </div>
 
@@ -78,7 +102,7 @@ const Settings: React.FC = () => {
           <NavButton active={activeTab === 'integrations'} onClick={() => setActiveTab('integrations')} icon={<Layers size={20} />} label="Signal Gateways" />
           <NavButton active={activeTab === 'system'} onClick={() => setActiveTab('system')} icon={<Lock size={20} />} label="System Lockdown" />
           <div className="mt-12 pt-12 border-t border-slate-100 dark:border-slate-800">
-            <button onClick={() => navigate('/dashboard')} className="w-full flex items-center gap-5 px-8 py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all">
+            <button onClick={() => { localStorage.setItem('isLoggedIn', 'false'); navigate('/login'); }} className="w-full flex items-center gap-5 px-8 py-6 rounded-[2.5rem] text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all">
                <LogOut size={20} /> End Session
             </button>
           </div>
@@ -88,7 +112,7 @@ const Settings: React.FC = () => {
         <div className="flex-1 min-w-0">
           {activeTab === 'profile' && (
             <div className="space-y-10 animate-in slide-in-from-right duration-500">
-              <HubSection title="Administrator Identity" description="Edit your root biometric profile and authorized contact logic.">
+              <HubSection title="Administrator Identity" description="Authorized biometric profile updates save automatically to the perimeter database.">
                 <div className="flex flex-col md:flex-row items-center gap-12 p-12 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[4rem] mb-12 shadow-sm">
                    <div className="relative group">
                       <div className="w-48 h-48 rounded-[3.5rem] bg-brand/10 border-4 border-white dark:border-slate-800 flex items-center justify-center overflow-hidden shadow-2xl transition-transform group-hover:scale-[1.03]">
@@ -101,14 +125,14 @@ const Settings: React.FC = () => {
                    <div className="flex-1 text-center md:text-left space-y-5">
                       <h4 className="text-4xl font-bold font-outfit text-slate-900 dark:text-white leading-none tracking-tight">{activeUser?.name}</h4>
                       <p className="text-[11px] text-brand font-black uppercase tracking-[0.4em] flex items-center justify-center md:justify-start gap-2 leading-none"><CheckCircle2 size={14}/> Root Security Node</p>
-                      <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-3">
+                      <div className="flex wrap justify-center md:justify-start gap-4 pt-3">
                          <span className="px-5 py-2.5 bg-emerald-500/10 text-emerald-600 rounded-2xl text-[10px] font-black uppercase border border-emerald-500/20 shadow-sm flex items-center gap-2"><Key size={12}/> Biometrics Verified</span>
                          <span className="px-5 py-2.5 bg-blue-500/10 text-blue-600 rounded-2xl text-[10px] font-black uppercase border border-blue-500/20 shadow-sm flex items-center gap-2"><Globe size={12}/> Global Admin Access</span>
                       </div>
                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
                     <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-6">Identity Alias</label>
                     <input type="text" value={editName} onChange={(e)=>setEditName(e.target.value)} className="w-full p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] text-sm font-bold outline-none focus:border-brand transition-all shadow-sm focus:ring-4 focus:ring-brand/5" />
@@ -118,10 +142,6 @@ const Settings: React.FC = () => {
                     <input type="email" value={editEmail} onChange={(e)=>setEditEmail(e.target.value)} className="w-full p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] text-sm font-bold outline-none focus:border-brand transition-all shadow-sm focus:ring-4 focus:ring-brand/5" />
                   </div>
                 </div>
-                
-                <button onClick={handleSaveProfile} className="px-12 py-6 bg-brand text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-widest shadow-2xl shadow-brand/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-4">
-                   <Save size={22}/> Re-Synchronize Core Node
-                </button>
               </HubSection>
 
               <HubSection title="System Diagnostics" description="Test high-fidelity notification perimeters and signal tunes.">
@@ -166,15 +186,52 @@ const Settings: React.FC = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'integrations' && (
+            <div className="space-y-12 animate-in slide-in-from-right duration-500">
+               <HubSection title="Signal Gateway Perimeters" description="Manage active connections to social and commerce nodes. Changes sync instantly.">
+                 <div className="grid grid-cols-1 gap-6">
+                    <SystemToggle 
+                      label="WhatsApp Perimeter" 
+                      desc="Official Meta API node for direct customer messaging signals." 
+                      active={integrationSettings.whatsappEnabled} 
+                      onChange={() => toggleIntegration('whatsappEnabled')}
+                      icon={<WhatsAppIcon size={24} />}
+                    />
+                    <SystemToggle 
+                      label="Instagram Perimeter" 
+                      desc="Direct Message signal hooks for visual lead capture." 
+                      active={integrationSettings.instagramEnabled} 
+                      onChange={() => toggleIntegration('instagramEnabled')}
+                      icon={<InstagramIcon size={24} />}
+                    />
+                    <SystemToggle 
+                      label="TikTok Perimeter" 
+                      desc="Short-form video engagement node synchronization." 
+                      active={integrationSettings.tiktokEnabled} 
+                      onChange={() => toggleIntegration('tiktokEnabled')}
+                      icon={<TikTokIcon size={24} />}
+                    />
+                    <SystemToggle 
+                      label="Shopify Real-Time Sync" 
+                      desc="Automated inventory and order node synchronization." 
+                      active={integrationSettings.shopifySync} 
+                      onChange={() => toggleIntegration('shopifySync')}
+                      icon={<Database size={24} className="text-slate-400" />}
+                    />
+                 </div>
+               </HubSection>
+            </div>
+          )}
           
           {activeTab === 'system' && (
             <div className="space-y-12 animate-in slide-in-from-right duration-500">
               <HubSection title="Root System Control" description="Authorized maintenance signals and perimeter security configurations.">
                  <div className="grid grid-cols-1 gap-6">
-                    <SystemToggle label="Maintenance Perimeter" desc="Deactivate all sales nodes for immediate system updates." active={false} />
-                    <SystemToggle label="Gemini Cognitive Guard" desc="Enforce strict NDA-compliant AI reasoning for all agents." active={true} />
-                    <SystemToggle label="Global Sales Alerts" desc="Broadcast notification signals to all active perimeters." active={true} />
-                    <SystemToggle label="Mobile Node Sync" desc="Authorize high-fidelity real-time sync for mobile agents." active={true} />
+                    <SystemToggle label="Maintenance Perimeter" desc="Deactivate all sales nodes for immediate system updates." active={false} onChange={() => {}} />
+                    <SystemToggle label="Gemini Cognitive Guard" desc="Enforce strict NDA-compliant AI reasoning for all agents." active={true} onChange={() => {}} />
+                    <SystemToggle label="Global Sales Alerts" desc="Broadcast notification signals to all active perimeters." active={true} onChange={() => {}} />
+                    <SystemToggle label="Mobile Node Sync" desc="Authorize high-fidelity real-time sync for mobile agents." active={true} onChange={() => {}} />
                  </div>
                  <div className="mt-12 p-10 bg-red-500/5 border border-red-500/20 rounded-[3rem] flex items-center gap-10 text-left">
                     <Database className="text-red-500 shrink-0" size={48} />
@@ -262,19 +319,21 @@ const StaffNodeCard = ({ staff, onDelete }: any) => (
   </div>
 );
 
-const SystemToggle = ({ label, desc, active }: any) => {
-  const [isOn, setIsOn] = useState(active);
+const SystemToggle = ({ label, desc, active, onChange, icon }: any) => {
   return (
     <div className="flex items-center justify-between p-10 bg-slate-50 dark:bg-slate-950/50 rounded-[3rem] border border-slate-100 dark:border-slate-800 group hover:border-brand transition-all shadow-inner">
-       <div className="text-left space-y-2">
-          <p className="text-xl font-bold font-outfit text-slate-900 dark:text-white leading-none">{label}</p>
-          <p className="text-[11px] text-slate-500 font-black uppercase tracking-widest opacity-60">{desc}</p>
+       <div className="flex items-center gap-6 text-left">
+          {icon && <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">{icon}</div>}
+          <div className="space-y-2">
+             <p className="text-xl font-bold font-outfit text-slate-900 dark:text-white leading-none">{label}</p>
+             <p className="text-[11px] text-slate-500 font-black uppercase tracking-widest opacity-60 leading-relaxed">{desc}</p>
+          </div>
        </div>
        <button 
-         onClick={() => setIsOn(!isOn)}
-         className={`relative inline-flex h-9 w-18 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isOn ? 'bg-brand' : 'bg-slate-200 dark:bg-slate-800'}`}
+         onClick={onChange}
+         className={`relative inline-flex h-9 w-18 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${active ? 'bg-brand' : 'bg-slate-200 dark:bg-slate-800'}`}
        >
-         <span className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-xl ring-0 transition duration-300 ease-in-out ${isOn ? 'translate-x-9' : 'translate-x-0'}`} />
+         <span className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-xl ring-0 transition duration-300 ease-in-out ${active ? 'translate-x-9' : 'translate-x-0'}`} />
        </button>
     </div>
   );

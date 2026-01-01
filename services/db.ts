@@ -1,5 +1,5 @@
 
-import { Conversation, Product, User as UserType, AiSettings, Message } from '../types';
+import { Conversation, Product, User as UserType, AiSettings, Message, IntegrationSettings } from '../types';
 
 const STORAGE_KEY = 'toto_perimeter_data';
 
@@ -9,6 +9,7 @@ interface AppState {
   conversations: Conversation[];
   orders: any[];
   aiSettings: AiSettings;
+  integrationSettings: IntegrationSettings;
 }
 
 const DEFAULT_STATE: AppState = {
@@ -48,6 +49,12 @@ const DEFAULT_STATE: AppState = {
     tone: 'casual',
     responseLength: 60,
     creativity: 75
+  },
+  integrationSettings: {
+    whatsappEnabled: true,
+    instagramEnabled: true,
+    tiktokEnabled: true,
+    shopifySync: true
   }
 };
 

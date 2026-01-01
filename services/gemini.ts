@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { db } from "./db";
-import { AiSettings } from "../types";
+import { AiSettings, Platform } from "../types";
 
 export class GeminiService {
   /**
@@ -15,26 +15,37 @@ export class GeminiService {
       
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
+      // Extract platform for tone adjustment
+      const isSocial = conversationContext.toLowerCase().includes('instagram') || conversationContext.toLowerCase().includes('tiktok');
+      const isTiktok = conversationContext.toLowerCase().includes('tiktok');
+      
+      const platformInstructions = isTiktok 
+        ? "PLATFORM: TikTok. TONE: High energy, use 2-3 emojis, very concise. Avoid formal greetings." 
+        : isSocial 
+          ? "PLATFORM: Instagram. TONE: Visual and friendly. Use 1-2 emojis. Direct and helpful."
+          : "PLATFORM: WhatsApp. TONE: Professional, efficient, use bullet points for specs.";
+
       // Calculate temperature based on creativity (0-100 -> 0.1-1.2)
       const temperature = (currentSettings.creativity / 100) * 1.1 + 0.1;
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `
-        SYSTEM ROLE: You are TOTO AI for 'Locks 'N More'. 
-        PERSONALITY: ${currentSettings.personality}
-        TONE: ${currentSettings.tone}
-        LENGTH CONSTRAINT: Keep it roughly ${currentSettings.responseLength}% of a standard detailed response.
+        SYSTEM ROLE: You are TOTO AI for 'Locks 'N More', a premium smart lock retailer.
+        PERSONALITY ARCHETYPE: ${currentSettings.personality}
+        CORE TONE: ${currentSettings.tone}
+        ${platformInstructions}
+        LENGTH CONSTRAINT: Keep it roughly ${currentSettings.responseLength}% of a standard response.
         
-        CURRENT PRODUCT CATALOG:
+        CATALOG DATA:
         ${productContext}
 
-        CONVERSATION HISTORY:
+        CONTEXT:
         ${conversationContext}
 
-        CUSTOMER QUERY: "${customerQuery}"
+        CUSTOMER SIGNAL: "${customerQuery}"
 
-        TASK: Provide a concise WhatsApp-style response. Use bold text for product names. If they ask about stock, be precise.`,
+        TASK: Synthesize a response. Use **bold** for product names and prices. If they ask about stock, use the catalog data provided above.`,
         config: {
           temperature: temperature,
         }
