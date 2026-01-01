@@ -12,7 +12,6 @@ const Inbox: React.FC = () => {
   const [platformFilter, setPlatformFilter] = useState<'all' | Platform>('all');
   const [inputText, setInputText] = useState('');
   const [showStaffPicker, setShowStaffPicker] = useState(false);
-  const [showProductPicker, setShowProductPicker] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceAmount, setInvoiceAmount] = useState('0');
   
@@ -67,17 +66,19 @@ const Inbox: React.FC = () => {
   const fetchAiSuggestion = async () => {
     if (!activeChat || activeChat.messages.length === 0) return;
     setIsAiLoading(true);
-    const lastMsg = activeChat.messages[activeChat.messages.length - 1];
-    if (lastMsg.sender === 'customer') {
+    setAiSuggestion(null);
+    const lastMsg = activeChat.messages.filter(m => m.sender === 'customer').pop();
+    if (lastMsg) {
       const suggestion = await gemini.getAiResponseSuggestion("TOTO Sales Context", lastMsg.text);
       setAiSuggestion(suggestion);
+    } else {
+      setAiSuggestion("No customer signal found to generate a response.");
     }
     setIsAiLoading(false);
   };
 
   return (
     <div className="flex h-full bg-[#f0f2f5] dark:bg-slate-950 overflow-hidden relative font-inter text-left">
-      {/* THREAD LIST */}
       <div className={`flex flex-col border-r border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-900 transition-all duration-300 ${selectedId ? 'hidden md:flex md:w-[400px]' : 'flex w-full md:w-[400px]'}`}>
         <div className="p-4 sm:p-6 bg-[#f0f2f5] dark:bg-slate-950 border-b border-slate-200 dark:border-slate-900 space-y-4">
           <div className="flex items-center justify-between">
@@ -111,7 +112,6 @@ const Inbox: React.FC = () => {
         </div>
       </div>
 
-      {/* CHAT PANE */}
       <div className={`flex-1 flex flex-col min-w-0 bg-[#e5ddd5] dark:bg-slate-950 relative ${selectedId ? 'flex' : 'hidden md:flex'}`}>
         {selectedId ? (
           <>
@@ -119,7 +119,7 @@ const Inbox: React.FC = () => {
               <div className="flex items-center gap-3 min-w-0">
                 <button onClick={() => setSelectedId(null)} className="p-2 -ml-2 text-slate-500 md:hidden"><ChevronLeft size={24} /></button>
                 <div className="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-black text-sm">{activeChat?.customerName.charAt(0)}</div>
-                <div className="truncate">
+                <div className="truncate text-left">
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate leading-none">{activeChat?.customerName}</h3>
                   <div className="flex items-center gap-3 mt-1.5">
                     <p className="text-[10px] text-emerald-500 font-black uppercase flex items-center gap-1 tracking-widest leading-none">
@@ -133,10 +133,11 @@ const Inbox: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                 <button onClick={fetchAiSuggestion} className="p-2.5 text-brand hover:bg-brand/10 rounded-xl transition-all" title="AI Suggestion"><Sparkles size={20}/></button>
+                 <button onClick={fetchAiSuggestion} disabled={isAiLoading} className={`p-2.5 text-brand hover:bg-brand/10 rounded-xl transition-all ${isAiLoading ? 'animate-pulse' : ''}`} title="AI Suggestion">
+                   {isAiLoading ? <RefreshCw className="animate-spin" size={20}/> : <Sparkles size={20}/>}
+                 </button>
                  <button onClick={() => setShowInvoiceModal(true)} className="p-2.5 text-slate-500 hover:text-brand transition-all" title="Invoice Node"><CreditCard size={20}/></button>
                  <button onClick={() => setShowStaffPicker(true)} className="p-2.5 text-slate-500 hover:text-brand transition-all" title="Assign Staff"><UserPlus size={20}/></button>
-                 <button className="p-2.5 text-slate-500"><MoreVertical size={20}/></button>
               </div>
             </div>
             
@@ -168,19 +169,19 @@ const Inbox: React.FC = () => {
               {aiSuggestion && (
                 <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-brand/20 flex justify-between items-center animate-in slide-in-from-bottom duration-300">
                    <div className="flex-1 text-left">
-                     <p className="text-[10px] font-black text-brand uppercase tracking-widest mb-1 flex items-center gap-1"><Sparkles size={12}/> AI Recommended Release</p>
+                     <p className="text-[10px] font-black text-brand uppercase tracking-widest mb-1 flex items-center gap-1"><Sparkles size={12}/> TOTO Synthesis Node</p>
                      <p className="text-xs font-bold text-slate-600 dark:text-slate-300 italic">
                        <SafeText text={aiSuggestion} />
                      </p>
                    </div>
                    <div className="flex gap-2 shrink-0 ml-4">
                      <button onClick={() => setAiSuggestion(null)} className="p-2 text-slate-400 hover:text-red-500"><X size={18}/></button>
-                     <button onClick={() => {setInputText(aiSuggestion); setAiSuggestion(null);}} className="px-4 py-2 bg-brand text-white text-[10px] font-black uppercase rounded-xl">Use</button>
+                     <button onClick={() => {setInputText(aiSuggestion); setAiSuggestion(null);}} className="px-4 py-2 bg-brand text-white text-[10px] font-black uppercase rounded-xl">Inject</button>
                    </div>
                 </div>
               )}
               <div className="flex items-center gap-2 h-14">
-                {!isRecording && <button onClick={() => setShowProductPicker(true)} className="p-2.5 text-slate-500 hover:text-brand hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all"><Box size={24}/></button>}
+                <button onClick={() => {}} className="p-2.5 text-slate-500 hover:text-brand hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all"><Box size={24}/></button>
                 <div className={`flex-1 bg-white dark:bg-slate-800 rounded-[1.5rem] px-4 flex items-center border border-transparent transition-all ${isRecording ? 'border-red-500 ring-2 ring-red-500/10' : ''}`}>
                   {isRecording ? (
                     <div className="flex-1 flex justify-between items-center text-xs font-bold text-red-500 py-3">
@@ -221,20 +222,19 @@ const Inbox: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center opacity-30 text-center p-10 select-none">
             <div className="w-32 h-32 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 border border-slate-300 dark:border-slate-700 shadow-inner"><MessageSquare size={64} className="text-slate-400"/></div>
             <h3 className="text-3xl font-bold font-outfit uppercase tracking-tighter">Authorized Node Ready</h3>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] mt-4 text-slate-500">Secure perimeter connection awaiting signal selection.</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] mt-4 text-slate-500 text-center">Secure perimeter connection awaiting signal selection.</p>
           </div>
         )}
       </div>
 
-      {/* MODALS */}
       {showStaffPicker && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-10 border border-slate-200 dark:border-slate-800 shadow-2xl animate-in zoom-in duration-300">
-             <div className="flex items-center justify-between mb-8 text-left"><h3 className="text-xl font-bold font-outfit uppercase tracking-tighter">Assign Node Access</h3><button onClick={() => setShowStaffPicker(false)}><X size={24}/></button></div>
+             <div className="flex items-center justify-between mb-8 text-left"><h3 className="text-xl font-bold font-outfit uppercase tracking-tighter">Assign Node</h3><button onClick={() => setShowStaffPicker(false)}><X size={24}/></button></div>
              <div className="space-y-3">
                 {staff.map(s => (
                   <button key={s.id} onClick={() => {assignStaff(selectedId!, s.name); setShowStaffPicker(false);}} className="w-full flex items-center gap-4 p-5 rounded-[2rem] hover:bg-brand/5 border border-transparent hover:border-brand/20 text-left transition-all">
-                    <img src={s.avatar} className="w-12 h-12 rounded-2xl object-cover shadow-sm" />
+                    <div className="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center text-brand font-black text-sm">{s.name.charAt(0)}</div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-slate-900 dark:text-white">{s.name}</p>
                       <p className="text-[10px] font-black uppercase text-brand tracking-widest mt-1">{s.role}</p>
@@ -254,7 +254,7 @@ const Inbox: React.FC = () => {
                 <p className="text-[9px] font-black uppercase text-slate-400 mb-2">Amount RM</p>
                 <input type="number" value={invoiceAmount} onChange={(e)=>setInvoiceAmount(e.target.value)} className="w-full bg-transparent text-4xl font-black font-outfit outline-none focus:text-brand" autoFocus />
              </div>
-             <button onClick={() => {generateInvoice(selectedId!, parseFloat(invoiceAmount)); setShowInvoiceModal(false);}} className="w-full py-6 bg-brand text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-brand/40 hover:scale-[1.02] active:scale-95 transition-all">Authorize Release</button>
+             <button onClick={() => {generateInvoice(selectedId!, parseFloat(invoiceAmount)); setShowInvoiceModal(false);}} className="w-full py-6 bg-brand text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl">Authorize Release</button>
           </div>
         </div>
       )}

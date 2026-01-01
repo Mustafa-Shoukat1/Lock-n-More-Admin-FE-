@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,19 +34,11 @@
             --border-color: #334155;
         }
 
-        /* HARD RESET: NO ANIMATIONS OR MOVING OBJECTS */
-        *, *::before, *::after {
-            animation: none !important;
-            transition: none !important;
-            transition-duration: 0s !important;
-            animation-duration: 0s !important;
-            scroll-behavior: auto !important;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-main);
+            transition: background-color 0.3s ease;
         }
 
         h1, h2, h3, .font-outfit {
@@ -60,7 +53,11 @@
         }
         ::-webkit-scrollbar-thumb {
             background: var(--text-muted);
-            border-radius: 0px;
+            border-radius: 10px;
+        }
+
+        .transition-all {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
     <script>

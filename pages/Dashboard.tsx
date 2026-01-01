@@ -3,22 +3,21 @@ import React, { useState, useMemo } from 'react';
 import { 
   CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis
 } from 'recharts';
-import { DollarSign, Activity, Target, Zap, MessageSquare, Smartphone, BarChart3, Calendar, ArrowUpRight, AlertCircle } from 'lucide-react';
-import { useApp } from '../App';
+// Added RefreshCw to imports
+import { DollarSign, Activity, Target, Zap, MessageSquare, Smartphone, BarChart3, Calendar, ArrowUpRight, AlertCircle, History, ShieldCheck, RefreshCw } from 'lucide-react';
+import { useApp, SafeText } from '../App';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
-  const { conversations, orders, simulateLead } = useApp();
+  const { conversations, orders, simulateLead, products } = useApp();
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
 
-  // Real-time calculation from DB
+  // Dynamic Calculations
   const totalRevenue = useMemo(() => orders.reduce((acc, curr) => acc + curr.amount, 0), [orders]);
-  const pendingLeadsCount = useMemo(() => conversations.filter(c => c.unreadCount > 0).length, [conversations]);
-  const closureRate = useMemo(() => {
-    if (conversations.length === 0) return "0.0";
-    return ((orders.length / conversations.length) * 100).toFixed(1);
-  }, [orders, conversations]);
+  const activeSignals = conversations.length;
+  const pendingLeadsCount = conversations.filter(c => c.unreadCount > 0).length;
+  const outOfStockCount = products.filter(p => p.stock === 0).length;
 
   const salesData = useMemo(() => [
     { name: 'Mon', sales: 4200 },
@@ -27,67 +26,61 @@ const Dashboard: React.FC = () => {
     { name: 'Thu', sales: 4780 },
     { name: 'Fri', sales: 7890 },
     { name: 'Sat', sales: 9390 },
-    { name: 'Today', sales: totalRevenue }, // "Today" reflects the live DB state
+    { name: 'Today', sales: totalRevenue },
   ], [totalRevenue]);
 
   const handleGenerate = () => {
     setIsGenerating(true);
     simulateLead();
-    // Provide a small delay for simulation feel
-    setTimeout(() => setIsGenerating(false), 500);
+    setTimeout(() => setIsGenerating(false), 600);
   };
 
   return (
     <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto pb-24 md:pb-8 text-left">
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 bg-surface dark:bg-slate-900 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 bg-surface dark:bg-slate-900 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/20 dark:shadow-none">
         <div className="space-y-1">
-          <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-outfit tracking-tighter">Ecosystem Pulse</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-outfit tracking-tighter">Command Center</h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-xs sm:text-sm flex items-center gap-2">
-            <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Real-time sales signals from {conversations.length} active nodes
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            System Integrity: Optimal • {activeSignals} Perimeter Nodes Active
           </p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 lg:flex-none lg:min-w-[140px]">
-             <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-             <select 
-               className="w-full pl-9 pr-3 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none appearance-none cursor-pointer"
-             >
-               <option value="7">Live Terminal</option>
-               <option value="30">Monthly Goal</option>
-             </select>
-          </div>
           <button 
             onClick={handleGenerate}
             disabled={isGenerating}
-            className={`flex-1 lg:flex-none px-6 sm:px-8 py-3 bg-brand text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-700 shadow-xl shadow-brand/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2`}
+            className="flex-1 lg:flex-none px-8 py-3.5 bg-brand text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-700 shadow-xl shadow-brand/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
           >
-            {isGenerating ? <Zap size={14} className="animate-spin" /> : <Activity size={14} />}
-            {isGenerating ? 'Injecting Signal...' : 'Simulate Lead'}
+            {/* Using RefreshCw which is now imported above */}
+            {isGenerating ? <RefreshCw className="animate-spin" size={14} /> : <Zap size={14} fill="currentColor" />}
+            {isGenerating ? 'Injecting...' : 'Simulate Signal'}
           </button>
         </div>
       </div>
 
+      {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <DashMetric label="Net Settlement" value={`RM ${totalRevenue.toLocaleString()}`} trend="+14%" icon={<DollarSign />} color="blue" />
-        <DashMetric label="Unread Signals" value={pendingLeadsCount.toString()} trend="Immediate" icon={<Activity />} color="emerald" />
-        <DashMetric label="Closing Velocity" value={`${closureRate}%`} trend="+2.1%" icon={<Target />} color="amber" />
-        <DashMetric label="Perimeter Health" value="100%" trend="Secure" icon={<Zap />} color="purple" />
+        <DashMetric label="Net Settlement" value={`RM ${totalRevenue.toLocaleString()}`} trend="+12.5%" icon={<DollarSign />} color="blue" />
+        <DashMetric label="Active Signals" value={activeSignals.toString()} trend={`${pendingLeadsCount} unread`} icon={<Activity />} color="emerald" />
+        <DashMetric label="Stock Critical" value={outOfStockCount.toString()} trend="Action Needed" icon={<AlertCircle />} color="amber" />
+        <DashMetric label="AI Uptime" value="100%" trend="Secure" icon={<ShieldCheck />} color="purple" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-10 gap-4">
+        {/* Main Chart */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between mb-10">
             <div>
               <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white font-outfit tracking-tight">Revenue Velocity</h3>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Confirmed transactions via TOTO Hub</p>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Authorized transaction flow</p>
             </div>
-            <div className="flex gap-2">
-              <span className="flex items-center gap-1.5 px-3 py-1 bg-brand/5 text-brand text-[9px] font-black uppercase rounded-lg border border-brand/10"><Smartphone size={10}/> Official Node Access</span>
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+              <BarChart3 size={20} className="text-brand" />
             </div>
           </div>
-          <div className="h-60 sm:h-80 -ml-4">
+          <div className="h-64 sm:h-80 -ml-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={salesData}>
                 <defs>
@@ -100,66 +93,48 @@ const Dashboard: React.FC = () => {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '700'}} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '700'}} dx={-5} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: '16px', boxShadow: '0 20px 40px -8px rgba(0,0,0,0.4)', color: '#fff' }}
+                  contentStyle={{ backgroundColor: '#111827', border: 'none', borderRadius: '16px', color: '#fff' }}
                   itemStyle={{ fontSize: '10px', fontWeight: '800' }}
                 />
-                <Area type="monotone" dataKey="sales" stroke="#2563EB" fillOpacity={1} fill="url(#colorSales)" strokeWidth={4} dot={{ r: 5, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} animationDuration={1000} />
+                <Area type="monotone" dataKey="sales" stroke="#2563EB" fillOpacity={1} fill="url(#colorSales)" strokeWidth={4} dot={{ r: 5, fill: '#2563EB', strokeWidth: 2, stroke: '#fff' }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-slate-900 p-6 sm:p-8 rounded-3xl sm:rounded-[3rem] text-white border border-slate-800 shadow-xl relative overflow-hidden group">
-            <h3 className="text-lg sm:text-xl font-bold font-outfit mb-6 flex items-center gap-2 text-left"><Zap size={20} className="text-brand" /> Hub Management</h3>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-               <button onClick={() => navigate('/inbox')} className="p-4 sm:p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all text-left group/btn">
-                  <MessageSquare size={18} className="text-brand mb-2 sm:mb-3 group-hover/btn:scale-110 transition-transform" />
-                  <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400">Open Inbox</p>
-                  <p className="text-xs sm:text-sm font-bold mt-1">Manage Feeds</p>
-               </button>
-               <button onClick={() => navigate('/ai-manager')} className="p-4 sm:p-5 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all text-left group/btn">
-                  <Target size={18} className="text-amber-500 mb-2 sm:mb-3 group-hover/btn:scale-110 transition-transform" />
-                  <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-slate-400">TOTO Logic</p>
-                  <p className="text-xs sm:text-sm font-bold mt-1">Calibrate AI</p>
-               </button>
+        {/* Right Sidebar - Recent Activity */}
+        <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[400px] sm:h-[500px]">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <History size={20} className="text-brand" />
+              <h3 className="text-lg font-bold font-outfit text-slate-900 dark:text-white">System Logs</h3>
             </div>
+            <span className="px-3 py-1 bg-brand/10 text-brand rounded-full text-[9px] font-black uppercase">Live</span>
           </div>
-
-          <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-8 rounded-3xl sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[350px] sm:h-[400px]">
-            <div className="flex items-center justify-between mb-6 sm:mb-8 text-left">
-              <div>
-                <h3 className="text-lg font-bold font-outfit text-slate-900 dark:text-white">Priority Feed</h3>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Unread Signal Burst ({pendingLeadsCount})</p>
-              </div>
-              <div className="p-2 sm:p-3 bg-red-500/10 rounded-2xl text-red-500">
-                <AlertCircle size={18} />
-              </div>
-            </div>
-            
-            <div className="flex-1 space-y-3 overflow-y-auto pr-2 scrollbar-none text-left">
-              {conversations.filter(c => c.unreadCount > 0).length > 0 ? conversations.filter(c => c.unreadCount > 0).map((lead) => (
-                <div key={lead.id} onClick={() => navigate('/inbox')} className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer group">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center font-black text-brand text-xs font-outfit border border-slate-100 dark:border-slate-800 shrink-0 group-hover:bg-brand group-hover:text-white transition-colors">
-                        {lead.customerName.charAt(0)}
-                      </div>
-                      <p className="text-xs sm:text-sm font-bold truncate max-w-[100px] sm:max-w-[120px] text-slate-900 dark:text-white">{lead.customerName}</p>
+          
+          <div className="flex-1 space-y-4 overflow-y-auto pr-2 scrollbar-none">
+            {conversations.slice(0, 10).map((conv) => (
+              <div key={conv.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-brand/10 text-brand flex items-center justify-center font-black text-xs">
+                      {conv.customerName.charAt(0)}
                     </div>
-                    <span className="text-[8px] sm:text-[9px] font-black text-red-500 uppercase tracking-widest shrink-0">{lead.lastTimestamp}</span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{conv.customerName}</p>
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-slate-500 truncate italic">"{lead.lastMessage}"</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">{conv.lastTimestamp}</p>
                 </div>
-              )) : (
-                <div className="h-full flex flex-col items-center justify-center opacity-30 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-                    <Zap size={32} className="text-slate-400" />
-                  </div>
-                  <p className="text-xs font-black uppercase tracking-widest">Awaiting new signals</p>
+                <p className="text-[10px] text-slate-500 italic line-clamp-2">
+                  <SafeText text={conv.lastMessage} />
+                </p>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-md uppercase ${conv.aiEnabled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                    {conv.aiEnabled ? 'AI Active' : 'Human Mode'}
+                  </span>
+                  <button onClick={() => navigate('/inbox')} className="text-[8px] font-black text-brand uppercase hover:underline">Intercept</button>
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -176,18 +151,18 @@ const DashMetric = ({ label, value, trend, icon, color }: any) => {
   };
   return (
     <div className="bg-surface dark:bg-slate-900 p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all hover:scale-[1.02] duration-300 group overflow-hidden text-left">
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <div className={`p-3 sm:p-4 rounded-xl sm:rounded-[1.25rem] transition-transform group-hover:rotate-12 ${(colors as any)[color]}`}>
+      <div className="flex items-center justify-between mb-6">
+        <div className={`p-4 rounded-2xl transition-transform group-hover:rotate-6 ${(colors as any)[color]}`}>
           {React.cloneElement(icon, { size: 20 })}
         </div>
-        <div className={`flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl ${trend.startsWith('+') ? 'bg-emerald-500/10 text-emerald-600' : (trend === 'Optimal' || trend === 'Secure' ? 'bg-brand/10 text-brand' : 'bg-slate-100 dark:bg-slate-800 text-slate-500')}`}>
+        <div className={`flex items-center gap-1.5 text-[9px] font-black px-3 py-1.5 rounded-xl ${trend.startsWith('+') ? 'bg-emerald-500/10 text-emerald-600' : (['Secure', 'Optimal'].includes(trend) ? 'bg-brand/10 text-brand' : 'bg-red-500/10 text-red-500')}`}>
           {trend.startsWith('+') && <ArrowUpRight size={12}/>}
           {trend}
         </div>
       </div>
       <div>
         <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-white font-outfit tracking-tighter leading-none">{value}</h2>
-        <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-3 sm:mt-4">{label}</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-4">{label}</p>
       </div>
     </div>
   );

@@ -19,25 +19,10 @@ import { db } from './services/db';
 
 const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
 
-/**
- * SafeText: Converts basic markdown into bold HTML and strips all raw markers.
- * Ensures the "Real View" without stars or pound signs.
- */
 export const SafeText: React.FC<{ text: string }> = ({ text }) => {
   if (!text) return null;
-  
-  // 1. Clean up AI-specific prefixing and raw characters
-  let clean = text
-    .replace(/^"|"$/g, '')          // Remove outer quotes
-    .replace(/###\s+/g, '')         // Remove H3 markers
-    .replace(/##\s+/g, '')          // Remove H2 markers
-    .replace(/#\s+/g, '')           // Remove H1 markers
-    .replace(/(\r\n|\n|\r)/gm, " ") // Optional: Normalize line breaks for chat bubbles
-    .trim();
-
-  // 2. Process bolding while removing the ** characters
+  let clean = text.replace(/^"|"$/g, '').replace(/###\s+/g, '').replace(/##\s+/g, '').replace(/#\s+/g, '').trim();
   const parts = clean.split(/(\*\*.*?\*\*)/g);
-  
   return (
     <>
       {parts.map((part, i) => {
@@ -45,21 +30,11 @@ export const SafeText: React.FC<{ text: string }> = ({ text }) => {
           const boldText = part.slice(2, -2);
           return <strong key={i} className="font-extrabold text-slate-900 dark:text-white">{boldText}</strong>;
         }
-        // Handle single * just in case
         return part.replace(/\*/g, '');
       })}
     </>
   );
 };
-
-interface Order {
-  id: string;
-  customer: string;
-  status: 'fulfilled' | 'pending' | 'processing';
-  amount: number;
-  date: string;
-  platform: string;
-}
 
 interface AppContextType {
   lang: Language;
@@ -79,8 +54,8 @@ interface AppContextType {
   setConversations: (c: Conversation[]) => void;
   staff: UserType[];
   setStaff: (s: UserType[]) => void;
-  orders: Order[];
-  setOrders: (o: Order[]) => void;
+  orders: any[];
+  setOrders: (o: any[]) => void;
   aiSettings: AiSettings;
   setAiSettings: (s: AiSettings) => void;
   sendMessage: (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
@@ -123,11 +98,10 @@ const App: React.FC = () => {
     { id: 2, title: 'Security Alert', message: 'Node Alpha connected.', type: 'system', time: '1h ago', read: false },
   ]);
 
-  // Unified persistence wrapper for Vercel persistence
   const updateData = (updates: Partial<typeof data>) => {
     setData(prev => {
       const next = { ...prev, ...updates };
-      db.save(updates);
+      db.save(next);
       return next;
     });
   };
@@ -135,7 +109,7 @@ const App: React.FC = () => {
   const setStaff = (staff: UserType[]) => updateData({ staff });
   const setProducts = (products: Product[]) => updateData({ products });
   const setConversations = (conversations: Conversation[]) => updateData({ conversations });
-  const setOrders = (orders: Order[]) => updateData({ orders });
+  const setOrders = (orders: any[]) => updateData({ orders });
   const setAiSettings = (aiSettings: AiSettings) => updateData({ aiSettings });
   
   const setActiveUser = (u: UserType | null) => {
@@ -147,14 +121,14 @@ const App: React.FC = () => {
   };
 
   const resetDatabase = () => {
-    const fresh = db.reset();
-    setData(fresh);
-    window.location.reload();
+    if (confirm("Permanently wipe local perimeter data and reset to production defaults?")) {
+      const fresh = db.reset();
+      setData(fresh);
+      window.location.reload();
+    }
   };
 
-  useEffect(() => { 
-    localStorage.setItem('isLoggedIn', isLoggedIn.toString()); 
-  }, [isLoggedIn]);
+  useEffect(() => { localStorage.setItem('isLoggedIn', isLoggedIn.toString()); }, [isLoggedIn]);
 
   const playNotificationSound = () => {
     const audio = new Audio(NOTIFICATION_SOUND_URL);
@@ -164,7 +138,7 @@ const App: React.FC = () => {
 
   const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text') => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsg = { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, status: 'sent' as const };
+    const newMsg: Message = { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, status: 'sent' };
     const updated = data.conversations.map(c => c.id === convId ? {
       ...c,
       messages: [...c.messages, newMsg],
@@ -195,14 +169,17 @@ const App: React.FC = () => {
   };
 
   const simulateLead = () => {
+    const queries = ["Price of A100 Pro?", "Any promotion for FaceID gate lock?", "Do you have smart padlocks in stock?", "Installation fee for biometric lock?"];
+    const names = ["Ahmad Fauzi", "Jenny Tan", "Siva Kumar", "Lim Wei"];
     const id = Date.now().toString();
+    const query = queries[Math.floor(Math.random() * queries.length)];
     const newConv: Conversation = {
-      id, customerName: 'New Lead ' + id.slice(-3), customerPhone: '+6011-XXXX-XXXX', platform: 'whatsapp', lastMessage: 'Biometric locks inquiry.', lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', aiEnabled: true,
-      messages: [{ id: 'm'+id, sender: 'customer', text: 'I need a smart lock.', timestamp: 'Just Now', type: 'text' }]
+      id, customerName: names[Math.floor(Math.random() * names.length)], customerPhone: '+6011-XXXX-XXXX', platform: 'whatsapp', lastMessage: query, lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', aiEnabled: true,
+      messages: [{ id: 'm'+id, sender: 'customer', text: query, timestamp: 'Just Now', type: 'text' }]
     };
     setConversations([newConv, ...data.conversations]);
     playNotificationSound();
-    setNotifications(prev => [{ id: Date.now(), title: 'Lead Signal', message: `New inquiry from ${newConv.customerName}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
+    setNotifications(prev => [{ id: Date.now(), title: 'Signal Detected', message: `New lead from ${newConv.customerName}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
