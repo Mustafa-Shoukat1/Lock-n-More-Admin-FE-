@@ -1,9 +1,12 @@
-import React from 'react';
-import { BookOpen, Shield, Zap, MessageSquare, Package, Cpu, Terminal, Users, Globe, CheckCircle, ListChecks, Calendar, Smartphone, Database, Lock, Layers } from 'lucide-react';
+
+import React, { useState } from 'react';
+import { BookOpen, Shield, Zap, MessageSquare, Package, Cpu, Users, Globe, CheckCircle, Calendar, Database, Lock, Layers, Info, DollarSign, ListChecks, Smartphone } from 'lucide-react';
 
 const Documentation: React.FC = () => {
+  const [activeManual, setActiveManual] = useState<'plan' | 'admin' | 'staff' | 'ai'>('plan');
+
   return (
-    <div className="p-6 md:p-12 space-y-12 max-w-6xl mx-auto pb-32">
+    <div className="p-6 md:p-12 space-y-12 max-w-6xl mx-auto pb-32 animate-in fade-in duration-500 text-left">
       {/* Hero Header */}
       <div className="bg-slate-900 text-white p-12 rounded-[3.5rem] border border-slate-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-20 opacity-10 rotate-12 pointer-events-none">
@@ -11,116 +14,99 @@ const Documentation: React.FC = () => {
         </div>
         <div className="relative z-10 space-y-6">
           <div className="flex items-center gap-3">
-            <span className="px-4 py-1.5 bg-brand rounded-full text-[10px] font-black uppercase tracking-[0.2em]">Platform TOTO</span>
-            <span className="px-4 py-1.5 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">v1.0 Release</span>
+            <span className="px-4 py-1.5 bg-brand rounded-full text-[10px] font-black uppercase tracking-[0.2em]">Master Proposal</span>
+            <span className="px-4 py-1.5 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">35 Day Roadmap</span>
           </div>
-          <h1 className="text-6xl font-bold font-outfit tracking-tighter leading-none">A-Z System Node Guide</h1>
-          <p className="text-slate-400 text-lg max-w-2xl font-medium">The comprehensive technical architecture, operational manual, and milestone roadmap for the TOTO Centralized AI Messaging Platform.</p>
+          <h1 className="text-6xl font-bold font-outfit tracking-tighter leading-none">System Knowledge Base</h1>
+          <p className="text-slate-400 text-lg max-w-2xl font-medium">TOTO Architecture: Real-time Shopify integration, AI agentic reasoning, and omnichannel signaling protocol.</p>
         </div>
       </div>
 
+      <div className="flex bg-white dark:bg-slate-900 p-2 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-x-auto scrollbar-none gap-2 shadow-sm">
+        <TabButton active={activeManual === 'plan'} onClick={() => setActiveManual('plan')} icon={<Calendar size={16}/>} label="Implementation Plan" />
+        <TabButton active={activeManual === 'admin'} onClick={() => setActiveManual('admin')} icon={<Database size={16}/>} label="Admin Manual" />
+        <TabButton active={activeManual === 'staff'} onClick={() => setActiveManual('staff')} icon={<Users size={16}/>} label="Staff Workflow" />
+        <TabButton active={activeManual === 'ai'} onClick={() => setActiveManual('ai')} icon={<Cpu size={16}/>} label="AI Training Guide" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        {/* Navigation Sticky Bar */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="sticky top-24 space-y-2">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Core Index</h3>
-            <DocNav label="Architecture" icon={<Cpu size={16}/>} />
-            <DocNav label="Project Scope" icon={<ListChecks size={16}/>} />
-            <DocNav label="Integrations" icon={<Globe size={16}/>} />
-            <DocNav label="Milestone Plan" icon={<Calendar size={16}/>} />
-            <DocNav label="Staff Protocol" icon={<Users size={16}/>} />
-            <DocNav label="Security Node" icon={<Lock size={16}/>} />
-          </div>
-        </div>
-
-        {/* Content Body */}
         <div className="lg:col-span-3 space-y-24">
-          
-          {/* Section 1: Architecture */}
-          <Section id="architecture" title="1. System Architecture" icon={<Cpu />}>
-            <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">TOTO is engineered as a high-fidelity <strong>Perimeter Intelligence Node</strong>. It centralizes social signals (WhatsApp, IG, TikTok) and bridges them with the <strong>Shopify Inventory Logic</strong> using a low-latency AI reasoning engine.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TechBadge label="React 19" sub="UI Execution" />
-              <TechBadge label="Gemini 3 Flash" sub="Cognitive Core" />
-              <TechBadge label="Shopify SDK" sub="Commerce Brain" />
-              <TechBadge label="n8n Orchestrator" sub="Workflow Logic" />
-            </div>
-          </Section>
+          {activeManual === 'plan' && (
+            <section className="space-y-12 animate-in slide-in-from-bottom duration-500">
+               <Section title="Project Purpose" icon={<BookOpen />}>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg">Centralizing WhatsApp, Instagram, and TikTok to eliminate missed leads and manual response delays.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+                    <BenefitCard title="AI-First System" desc="Instant automated responses with human takeover fallback nodes." />
+                    <BenefitCard title="Shopify Real-Time" desc="Faster responses via direct product catalog and inventory sync." />
+                  </div>
+               </Section>
 
-          {/* Section 2: Project Scope */}
-          <Section id="scope" title="2. Functional Scope" icon={<ListChecks />}>
-            <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-8">The core objective is to replace fragmented inboxes with a unified, intelligent sales perimeter.</p>
-            <div className="space-y-4">
-              <FeatureItem title="Omnichannel Centralization" desc="Unified dashboard for WhatsApp, Instagram DMs, and TikTok inquiries." />
-              <FeatureItem title="Agentic AI Layer" desc="Context-aware replies trained on historical data to replicate brand tone." />
-              <FeatureItem title="E-commerce Synergy" desc="Live fetching of product catalog, pricing, and order status from Shopify." />
-              <FeatureItem title="Hybrid Handover" desc="Seamless human override with 'Node Assignment' logic for specific agents." />
-            </div>
-          </Section>
+               <Section title="Milestone Roadmap" icon={<ListChecks />}>
+                 <div className="space-y-8 border-l-2 border-slate-100 dark:border-slate-800 ml-4 pl-10">
+                    <TimelineItem day="1-5" title="Milestone 1-2" desc="Requirement Analysis & Admin Panel Architecture Deployment." cost="$400" active />
+                    <TimelineItem day="6-15" title="Milestone 3-4" desc="WhatsApp API Connectivity & ChatGPT/AI Layer Training Node." cost="$750" active />
+                    <TimelineItem day="16-25" title="Milestone 5-10" desc="Shopify Sync, Media Handling, and Automation Engine (n8n)." cost="$600" />
+                    <TimelineItem day="26-35" title="Milestone 11-13" desc="Security Auth, Full QA Testing, and Staff Documentation." cost="$250" />
+                 </div>
+               </Section>
 
-          {/* Section 3: Integrations */}
-          <Section id="integrations" title="3. Integration Node List" icon={<Globe />}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <IntegrationBox name="WhatsApp API" detail="Official Business Cloud API supporting text, image, and voice." />
-              <IntegrationBox name="Shopify Engine" detail="Real-time catalog sync, SKU-level stock, and order management." />
-              <IntegrationBox name="Gemini AI" detail="Generative conversational engine for intent detection and response." />
-              <IntegrationBox name="Meta/TikTok" detail="Centralized message hooks for DMs and follower notifications." />
-            </div>
-          </Section>
+               <Section title="Core Deliverables" icon={<Zap />}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <DeliveryItem label="Centralized Admin Hub" />
+                     <DeliveryItem label="WhatsApp Business AI Bot" />
+                     <DeliveryItem label="Voice & Image Handling" />
+                     <DeliveryItem label="Shopify Live Inventory Node" />
+                     <DeliveryItem label="n8n Workflow Automation" />
+                     <DeliveryItem label="RBAC Security Perimeter" />
+                  </div>
+               </Section>
+            </section>
+          )}
 
-          {/* Section 4: Roadmap */}
-          <Section id="roadmap" title="4. Milestone Roadmap (60 Days)" icon={<Calendar />}>
-            <div className="space-y-6 relative border-l-2 border-slate-100 dark:border-slate-800 ml-4 pl-10">
-              <MilestoneCard 
-                day="0-20" 
-                title="Phase 1: Foundation" 
-                desc="Core platform setup, WhatsApp API connection, and Admin Panel UI deployment." 
-                active 
-              />
-              <MilestoneCard 
-                day="21-40" 
-                title="Phase 2: Intelligence" 
-                desc="AI brain training, Shopify e-commerce sync, and multi-agent handover logic." 
-              />
-              <MilestoneCard 
-                day="41-60" 
-                title="Phase 3: Omnichannel" 
-                desc="Instagram/TikTok integration, n8n workflow finalization, and documentation handover." 
-              />
-            </div>
-          </Section>
+          {activeManual === 'admin' && (
+            <section className="space-y-12 animate-in slide-in-from-bottom duration-500">
+               <Section title="Hub Management" icon={<Database />}>
+                  <div className="space-y-6">
+                    <WorkflowStep num="01" title="Node Monitoring" desc="View all active conversations in the global perimeter. Monitor staff latency." />
+                    <WorkflowStep num="02" title="Catalog Sync" desc="Use the Products hub to verify SKU integrity between n8n and Shopify." />
+                    <WorkflowStep num="03" title="Credential Security" desc="Manage API keys and authorized staff emails via the Admin Hub." />
+                  </div>
+               </Section>
+            </section>
+          )}
 
-          {/* Section 5: Staff Protocols */}
-          <Section id="staff" title="5. Staff Handover Protocol" icon={<Users />}>
-            <div className="p-8 bg-brand/5 border border-brand/20 rounded-[2.5rem] space-y-6">
-              <h4 className="text-xs font-black text-brand uppercase tracking-widest">Standard Operating Procedure (SOP)</h4>
-              <ol className="space-y-4 text-sm font-medium">
-                <li className="flex gap-4">
-                  <span className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-black shrink-0">01</span>
-                  <span><strong>AI Qualification:</strong> System handles initial FAQs and product discovery.</span>
-                </li>
-                <li className="flex gap-4">
-                  <span className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-black shrink-0">02</span>
-                  <span><strong>Signal Detection:</strong> Human agent detects high-intent closing opportunity.</span>
-                </li>
-                <li className="flex gap-4">
-                  <span className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-black shrink-0">03</span>
-                  <span><strong>Handover:</strong> Agent selects 'Handover to Staff' and assigns a specific Node (Agent).</span>
-                </li>
-                <li className="flex gap-4">
-                  <span className="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center text-[10px] font-black shrink-0">04</span>
-                  <span><strong>Closing:</strong> Human agent finishes the RM transaction using live Shopify data.</span>
-                </li>
-              </ol>
-            </div>
-          </Section>
-
-          {/* Footer End Transmission */}
-          <div className="pt-20 border-t border-slate-100 dark:border-slate-800 text-center">
-             <div className="inline-block p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">SYSTEM TOTO // END OF TRANSMISSION 2025</p>
-             </div>
-          </div>
+          {activeManual === 'staff' && (
+             <section className="space-y-12 animate-in slide-in-from-bottom duration-500">
+               <Section title="Agent Operations" icon={<Users />}>
+                  <div className="p-8 bg-brand/5 border border-brand/20 rounded-[2.5rem] mb-10">
+                     <p className="text-sm font-bold text-brand uppercase tracking-widest mb-4 flex items-center gap-2"><Smartphone size={16}/> Daily Signal Check</p>
+                     <p className="text-slate-600 dark:text-slate-400 text-sm">Agents must clear all 'Priority Signals' in the Inbox before end-of-shift. Use 'AI Off' toggle for complex pricing negotiations.</p>
+                  </div>
+                  <div className="space-y-6">
+                    <WorkflowStep num="01" title="Signal Detection" desc="New leads appear in Inbox with unread counts." />
+                    <WorkflowStep num="02" title="Human Takeover" desc="Toggle AI Mode to OFF when a customer asks for custom discount logic." />
+                    <WorkflowStep num="03" title="Voice Response" desc="Use the integrated Voice Node for a more personalized closure signal." />
+                  </div>
+               </Section>
+             </section>
+          )}
+        </div>
+        
+        <div className="lg:col-span-1">
+           <div className="sticky top-24 space-y-6">
+              <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
+                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><DollarSign size={14}/> Cost Breakdown</h4>
+                 <div className="space-y-4">
+                    <StatusItem label="Full System" val="$2,500" ok />
+                    <StatusItem label="Initial Launch" val="$1,300" ok />
+                    <StatusItem label="Social Addons" val="$400/ea" />
+                 </div>
+              </div>
+              <div className="bg-slate-950 p-8 rounded-[2.5rem] text-white">
+                 <p className="text-[9px] font-black text-brand uppercase tracking-widest mb-2">NDA Compliance</p>
+                 <p className="text-[10px] text-slate-500 font-bold leading-relaxed italic">All system architecture and Shopify credential logic are protected under the 2025 Locks 'N More Ownership Agreement.</p>
+              </div>
+           </div>
         </div>
       </div>
     </div>
@@ -128,58 +114,69 @@ const Documentation: React.FC = () => {
 };
 
 const Section = ({ title, icon, children }: any) => (
-  <section className="space-y-8">
+  <div className="space-y-8">
     <div className="flex items-center gap-4">
-      <div className="p-3 bg-brand text-white rounded-2xl shadow-lg shadow-brand/20">
+      <div className="p-3 bg-brand text-white rounded-2xl shadow-lg">
         {React.cloneElement(icon, { size: 24 })}
       </div>
-      <h2 className="text-4xl font-bold font-outfit tracking-tight">{title}</h2>
+      <h2 className="text-4xl font-bold font-outfit tracking-tighter uppercase">{title}</h2>
     </div>
     <div className="pl-0 md:pl-16">
       {children}
     </div>
-  </section>
-);
-
-const DocNav = ({ label, icon }: any) => (
-  <button className="w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-brand transition-all text-left">
-    {icon} {label}
-  </button>
-);
-
-const TechBadge = ({ label, sub }: any) => (
-  <div className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-    <p className="text-sm font-black uppercase tracking-widest">{label}</p>
-    <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{sub}</p>
   </div>
 );
 
-const IntegrationBox = ({ name, detail }: any) => (
-  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800 transition-all hover:border-brand">
-    <h5 className="font-bold text-sm mb-2">{name}</h5>
-    <p className="text-xs text-slate-500 leading-relaxed">{detail}</p>
+const TabButton = ({ active, onClick, icon, label }: any) => (
+  <button onClick={onClick} className={`flex items-center gap-3 px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all ${active ? 'bg-brand text-white shadow-xl scale-105' : 'text-slate-500 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800'}`}>{icon} {label}</button>
+);
+
+const BenefitCard = ({ title, desc }: any) => (
+  <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800">
+    <p className="text-sm font-black text-brand uppercase tracking-widest mb-2">{title}</p>
+    <p className="text-xs text-slate-500 font-bold leading-relaxed">{desc}</p>
   </div>
 );
 
-const MilestoneCard = ({ day, title, desc, active }: any) => (
-  <div className="relative">
+const TimelineItem = ({ day, title, desc, cost, active }: any) => (
+  <div className="relative pb-10">
     <div className={`absolute -left-[50px] top-1 w-5 h-5 rounded-full border-4 border-white dark:border-slate-950 shadow-md ${active ? 'bg-brand' : 'bg-slate-300'}`}></div>
     <div className="space-y-1">
-      <p className="text-[10px] font-black text-brand uppercase tracking-widest">Day {day}</p>
-      <h4 className="font-bold text-lg">{title}</h4>
-      <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-black text-brand uppercase tracking-widest">Day {day}</p>
+        <span className="text-[10px] font-black text-slate-400">{cost}</span>
+      </div>
+      <h4 className="font-bold text-lg font-outfit uppercase tracking-tight text-slate-900 dark:text-white">{title}</h4>
+      <p className="text-sm text-slate-500 leading-relaxed font-medium">{desc}</p>
     </div>
   </div>
 );
 
-const FeatureItem = ({ title, desc }: any) => (
-  <li className="flex gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-2xl transition-all">
-    <div className="mt-1"><CheckCircle size={18} className="text-emerald-500" /></div>
-    <div>
-      <p className="text-sm font-bold">{title}</p>
-      <p className="text-xs text-slate-500 font-medium">{desc}</p>
+const DeliveryItem = ({ label }: any) => (
+  <div className="flex items-center gap-3 p-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+    <CheckCircle size={16} className="text-emerald-500" />
+    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-tight">{label}</span>
+  </div>
+);
+
+const WorkflowStep = ({ num, title, desc }: any) => (
+  <div className="flex gap-6 group">
+    <div className="flex flex-col items-center">
+      <div className="w-10 h-10 rounded-full bg-brand/10 text-brand border border-brand/20 flex items-center justify-center font-black text-xs group-hover:bg-brand group-hover:text-white transition-all shadow-sm">{num}</div>
+      <div className="flex-1 w-px bg-slate-100 dark:bg-slate-800 my-2"></div>
     </div>
-  </li>
+    <div className="pb-8">
+      <h4 className="text-lg font-bold font-outfit uppercase tracking-tight">{title}</h4>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">{desc}</p>
+    </div>
+  </div>
+);
+
+const StatusItem = ({ label, val, ok }: any) => (
+  <div className="flex items-center justify-between text-[10px] font-bold">
+    <span className="text-slate-500 uppercase tracking-tighter">{label}</span>
+    <span className={ok ? 'text-brand' : 'text-slate-400'}>{val}</span>
+  </div>
 );
 
 export default Documentation;

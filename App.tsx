@@ -1,7 +1,6 @@
 
 import React, { useState, createContext, useContext, useEffect } from 'react';
-import { HashRouter as Router } from 'react-router-dom';
-import { Routes, Route, Navigate } from 'react-router';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
@@ -12,10 +11,29 @@ import Settings from './pages/Settings';
 import Analytics from './pages/Analytics';
 import Documentation from './pages/Documentation';
 import Orders from './pages/Orders';
+import Login from './pages/Login';
 import { Language, Product, Conversation, User as UserType, AiSettings, Message } from './types';
 import { translations } from './i18n';
+import { db } from './services/db';
 
 const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
+
+export const SafeText: React.FC<{ text: string }> = ({ text }) => {
+  if (!text) return null;
+  let cleanText = text.replace(/^"|"$/g, ''); 
+  cleanText = cleanText.replace(/###/g, ''); 
+  const parts = cleanText.split(/(\*\*.*?\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} className="font-black text-slate-900 dark:text-white">{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      })}
+    </>
+  );
+};
 
 interface Order {
   id: string;
@@ -32,22 +50,25 @@ interface AppContextType {
   t: (key: string) => string;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  activeUser: { name: string; role: string; id: string; avatar?: string; email?: string };
-  setActiveUser: (u: any) => void;
+  activeUser: UserType | null;
+  setActiveUser: (u: UserType | null) => void;
+  isLoggedIn: boolean;
+  setIsLoggedIn: (val: boolean) => void;
   notifications: any[];
   setNotifications: React.Dispatch<React.SetStateAction<any[]>>;
   products: Product[];
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  setProducts: (p: Product[]) => void;
   conversations: Conversation[];
-  setConversations: React.Dispatch<React.SetStateAction<Conversation[]>>;
+  setConversations: (c: Conversation[]) => void;
   staff: UserType[];
-  setStaff: React.Dispatch<React.SetStateAction<UserType[]>>;
+  setStaff: (s: UserType[]) => void;
   orders: Order[];
-  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  setOrders: (o: Order[]) => void;
   aiSettings: AiSettings;
-  setAiSettings: React.Dispatch<React.SetStateAction<AiSettings>>;
+  setAiSettings: (s: AiSettings) => void;
   sendMessage: (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type?: 'text' | 'image' | 'voice', mediaUrl?: string) => void;
   assignStaff: (convId: string, staffName: string) => void;
+  toggleAi: (convId: string) => void;
   markAsOpened: (convId: string) => void;
   generateInvoice: (convId: string, amount: number) => void;
   simulateLead: () => void;
@@ -64,181 +85,113 @@ export const useApp = () => {
   return context;
 };
 
+const ProtectedRoute = ({ children, roles }: { children: React.ReactNode, roles?: string[] }) => {
+  const { isLoggedIn, activeUser } = useApp();
+  const location = useLocation();
+  if (!isLoggedIn) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (roles && activeUser && !roles.includes(activeUser.role)) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
+  const initialState = db.load();
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
   const [lang, setLang] = useState<Language>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [activeUser, setActiveUser] = useState({ 
-    name: 'Mustafa Shoukat', 
-    role: 'Super Admin', 
-    id: 'admin1',
-    email: 'mustafa@locksnmore.com',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100'
-  });
-  
-  const [aiSettings, setAiSettings] = useState<AiSettings>({
-    personality: 'helpful',
-    tone: 'casual',
-    responseLength: 60,
-    creativity: 75
-  });
-
+  const [staff, setStaffInternal] = useState<UserType[]>(initialState.staff);
+  const [activeUser, setActiveUser] = useState<UserType | null>(isLoggedIn ? initialState.staff[0] : null);
+  const [aiSettings, setAiSettingsInternal] = useState<AiSettings>(initialState.aiSettings);
+  const [products, setProductsInternal] = useState<Product[]>(initialState.products);
+  const [conversations, setConversationsInternal] = useState<Conversation[]>(initialState.conversations);
+  const [orders, setOrdersInternal] = useState<Order[]>(initialState.orders);
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Priority Signal', message: 'Beh Chen is asking about smart locks.', type: 'lead', time: '2m ago', read: false },
+    { id: 2, title: 'Security Alert', message: 'New login node detected.', type: 'system', time: '1h ago', read: false },
   ]);
 
-  const [products, setProducts] = useState<Product[]>([
-    { id: '1', name: 'TOTO Smart Lock A100 Pro', price: 1299.00, stock: 45, category: 'Digital Locks', sku: 'SL-A100P', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 156 },
-    { id: '2', name: 'FaceID Gate Lock X2', price: 2499.00, stock: 12, category: 'Gate Locks', sku: 'GL-X2', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 89 },
-    { id: '3', name: 'TOTO Padlock Lite', price: 199.00, stock: 0, category: 'Padlocks', sku: 'PL-LITE', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&q=80&w=200', salesCount: 240 },
-  ]);
+  const setStaff = (s: UserType[]) => { setStaffInternal(s); db.save({ staff: s }); };
+  const setAiSettings = (s: AiSettings) => { setAiSettingsInternal(s); db.save({ aiSettings: s }); };
+  const setProducts = (p: Product[]) => { setProductsInternal(p); db.save({ products: p }); };
+  const setConversations = (c: Conversation[]) => { setConversationsInternal(c); db.save({ conversations: c }); };
+  const setOrders = (o: Order[]) => { setOrdersInternal(o); db.save({ orders: o }); };
 
-  // Mock data for testing KPI Analysis
-  const [conversations, setConversations] = useState<Conversation[]>([
-    { 
-      id: '1', 
-      customerName: 'Beh Chen', 
-      customerPhone: '+60 12-345 6789', 
-      platform: 'whatsapp', 
-      lastMessage: 'Biometric locks for sliding doors?', 
-      lastTimestamp: '10:42 AM', 
-      unreadCount: 2, 
-      isHumanTakeover: false, 
-      priority: 'high', 
-      status: 'active', 
-      dealStatus: 'open',
-      messages: [{ id: 'm1', sender: 'customer', text: 'Do you have biometric locks for sliding doors?', timestamp: '10:42 AM', type: 'text' }] 
-    },
-    { 
-      id: '2', 
-      customerName: 'Sarah Lim', 
-      customerPhone: '+60 11-234 5678', 
-      platform: 'instagram', 
-      lastMessage: 'Price for A100 Pro?', 
-      lastTimestamp: '09:15 AM', 
-      unreadCount: 0, 
-      isHumanTakeover: true, 
-      assignedStaff: 'Agent Sarah',
-      assignedAt: new Date(Date.now() - 3600000 * 8).toISOString(), // 8 hours ago (Delayed)
-      firstResponseAt: new Date(Date.now() - 600000).toISOString(), // 10 mins ago
-      isOpenedByStaff: true,
-      priority: 'medium', 
-      status: 'active', 
-      dealStatus: 'won',
-      messages: [{ id: 'm2', sender: 'customer', text: 'Price for A100 Pro?', timestamp: '09:15 AM', type: 'text' }] 
-    },
-    { 
-        id: '3', 
-        customerName: 'David Tan', 
-        customerPhone: '+60 17-999 0000', 
-        platform: 'whatsapp', 
-        lastMessage: 'Need help with installation.', 
-        lastTimestamp: '08:00 AM', 
-        unreadCount: 1, 
-        isHumanTakeover: true, 
-        assignedStaff: 'Mustafa Shoukat',
-        assignedAt: new Date(Date.now() - 1800000).toISOString(), // 30 mins ago
-        isOpenedByStaff: false,
-        priority: 'high', 
-        status: 'active', 
-        messages: [{ id: 'm3', sender: 'customer', text: 'Need help with installation.', timestamp: '08:00 AM', type: 'text' }] 
-      },
-  ]);
-
-  const [staff, setStaff] = useState<UserType[]>([
-    { id: 'staff1', name: 'Mustafa Shoukat', email: 'mustafa@locksnmore.com', role: 'super_admin', active: true, lastLogin: '1h ago', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100' },
-    { id: 'staff2', name: 'Agent Sarah', email: 'sarah@locksnmore.com', role: 'agent', active: true, lastLogin: '4h ago', avatar: 'https://i.pravatar.cc/150?u=sarah' },
-  ]);
-
-  const [orders, setOrders] = useState<Order[]>([
-    { id: '#TOTO-5501', customer: 'Beh Chen', status: 'processing', amount: 1299.00, date: 'Today', platform: 'whatsapp' },
-    { id: '#TOTO-5502', customer: 'Sarah Lim', status: 'fulfilled', amount: 2499.00, date: 'Yesterday', platform: 'instagram' },
-  ]);
+  useEffect(() => { localStorage.setItem('isLoggedIn', isLoggedIn.toString()); }, [isLoggedIn]);
 
   const playNotificationSound = () => {
     const audio = new Audio(NOTIFICATION_SOUND_URL);
     audio.volume = 0.5;
-    audio.play().catch(e => console.warn("Audio failed:", e));
+    audio.play().catch(() => {});
   };
 
-  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
-    const now = new Date();
-    const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setConversations(prev => prev.map(c => c.id === convId ? {
+  const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text') => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newMsg = { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, status: 'sent' as const };
+    setConversations(conversations.map(c => c.id === convId ? {
       ...c,
-      messages: [...c.messages, { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, mediaUrl, status: sender === 'customer' ? undefined : 'sent' }],
+      messages: [...c.messages, newMsg],
       lastMessage: type === 'voice' ? 'Voice Message' : text,
       lastTimestamp: timestamp,
-      unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0,
-      firstResponseAt: (sender === 'staff' || sender === 'ai') && !c.firstResponseAt ? now.toISOString() : c.firstResponseAt
+      unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0
     } : c));
-    
-    // Auto-update message status to 'read' after 2s for realism in UI testing
-    if (sender !== 'customer') {
-      setTimeout(() => {
-        setConversations(prev => prev.map(c => c.id === convId ? {
-          ...c,
-          messages: c.messages.map(m => m.sender === sender ? { ...m, status: 'read' as const } : m)
-        } : c));
-      }, 2000);
-    }
   };
 
   const assignStaff = (convId: string, staffName: string) => {
-    setConversations(prev => prev.map(c => c.id === convId ? { 
-      ...c, 
-      assignedStaff: staffName, 
-      assignedAt: new Date().toISOString(), 
-      isHumanTakeover: true,
-      isOpenedByStaff: false 
-    } : c));
+    setConversations(conversations.map(c => c.id === convId ? { ...c, assignedStaff: staffName, assignedAt: new Date().toISOString(), isHumanTakeover: true, aiEnabled: false } : c));
+  };
+
+  const toggleAi = (convId: string) => {
+    setConversations(conversations.map(c => c.id === convId ? { ...c, aiEnabled: !c.aiEnabled, isHumanTakeover: c.aiEnabled } : c));
   };
 
   const markAsOpened = (convId: string) => {
-    setConversations(prev => prev.map(c => c.id === convId ? { ...c, isOpenedByStaff: true, unreadCount: 0 } : c));
+    setConversations(conversations.map(c => c.id === convId ? { ...c, isOpenedByStaff: true, unreadCount: 0 } : c));
   };
 
   const generateInvoice = (convId: string, amount: number) => {
     const id = `#TOTO-${Date.now().toString().slice(-4)}`;
     const customer = conversations.find(c => c.id === convId)?.customerName || 'Customer';
-    setOrders(prev => [{ id, customer, status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...prev]);
+    setOrders([{ id, customer, status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...orders]);
     sendMessage(convId, `Invoice ${id} for RM ${amount} generated.`, 'staff');
   };
 
   const simulateLead = () => {
     const id = Date.now().toString();
     const newConv: Conversation = {
-      id, customerName: 'New Lead', customerPhone: '+6011-0000 0000', platform: 'whatsapp', lastMessage: 'Inquiry', lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', messages: [{ id: 'm'+id, sender: 'customer', text: 'I need a lock.', timestamp: 'Just Now', type: 'text' }]
+      id, customerName: 'New Lead ' + id.slice(-3), customerPhone: '+6011-XXXX-XXXX', platform: 'whatsapp', lastMessage: 'Biometric locks inquiry.', lastTimestamp: 'Just Now', unreadCount: 1, isHumanTakeover: false, priority: 'high', status: 'active', aiEnabled: true,
+      messages: [{ id: 'm'+id, sender: 'customer', text: 'I need a smart lock.', timestamp: 'Just Now', type: 'text' }]
     };
-    setConversations(prev => [newConv, ...prev]);
+    setConversations([newConv, ...conversations]);
     playNotificationSound();
+    setNotifications([{ id: Date.now(), title: 'Lead Signal', message: `New inquiry from ${newConv.customerName}`, type: 'lead', time: 'Just Now', read: false }, ...notifications]);
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
 
   return (
     <AppContext.Provider value={{ 
-      lang, setLang, t, searchQuery, setSearchQuery, activeUser, setActiveUser,
+      lang, setLang, t, searchQuery, setSearchQuery, activeUser, setActiveUser, isLoggedIn, setIsLoggedIn,
       notifications, setNotifications, products, setProducts, conversations, setConversations,
-      staff, setStaff, orders, setOrders, aiSettings, setAiSettings, sendMessage, assignStaff, markAsOpened, generateInvoice,
+      staff, setStaff, orders, setOrders, aiSettings, setAiSettings, sendMessage, assignStaff, toggleAi, markAsOpened, generateInvoice,
       simulateLead, isSidebarOpen, setSidebarOpen, playNotificationSound
     }}>
       <Router>
         <div className="flex h-screen overflow-hidden bg-primary">
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
+          {isLoggedIn && <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />}
           <div className="flex flex-col flex-1 w-0 overflow-hidden">
-            <Header />
-            <main className="flex-1 relative overflow-y-auto focus:outline-none pb-20 md:pb-0 scrollbar-none">
+            {isLoggedIn && <Header />}
+            <main className="flex-1 relative overflow-y-auto focus:outline-none scrollbar-none">
               <Routes>
+                <Route path="/login" element={<Login />} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/inbox" element={<Inbox />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/ai-manager" element={<AIManager />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/docs" element={<Documentation />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/inbox" element={<ProtectedRoute><Inbox /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                <Route path="/ai-manager" element={<ProtectedRoute roles={['super_admin', 'admin']}><AIManager /></ProtectedRoute>} />
+                <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/docs" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
               </Routes>
             </main>
           </div>

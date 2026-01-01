@@ -28,8 +28,9 @@ export interface Conversation {
   firstResponseAt?: string; 
   isOpenedByStaff?: boolean;
   status: 'active' | 'pending' | 'closed';
-  dealStatus?: 'won' | 'lost' | 'open'; // Added for closing analysis
+  dealStatus?: 'won' | 'lost' | 'open';
   messages: Message[];
+  aiEnabled: boolean; // Control if AI is currently managing this chat
 }
 
 export interface Product {
@@ -40,7 +41,7 @@ export interface Product {
   stock: number;
   category: string;
   sku: string;
-  salesCount?: number; // Added for product analysis
+  salesCount?: number;
 }
 
 export interface User {
@@ -54,7 +55,7 @@ export interface User {
 }
 
 export interface AiSettings {
-  personality: 'professional' | 'helpful' | 'aggressive' | 'passive';
+  personality: 'professional' | 'helpful' | 'aggressive' | 'passive' | 'witty' | 'detective';
   tone: 'formal' | 'casual' | 'urgent' | 'empathetic';
   responseLength: number;
   creativity: number;
