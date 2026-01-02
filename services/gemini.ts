@@ -1,11 +1,13 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { db } from "./db";
-import { AiSettings, Platform } from "../types";
+import { AiSettings } from "../types";
 
 export class GeminiService {
   private getApiKey(): string {
-    // Safely retrieve the API key from the environment
-    return (window as any).process?.env?.API_KEY || "";
+    // In Vite, process.env.API_KEY is defined via the vite.config.ts define block
+    // or through the environment.
+    return process.env.API_KEY || "";
   }
 
   /**
@@ -15,7 +17,7 @@ export class GeminiService {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       console.warn("Gemini API Key is missing. Check your environment variables.");
-      return "The AI reasoning node is currently offline. Please configure the API key.";
+      return "The AI reasoning node is currently offline. Please configure the API key in Vercel settings.";
     }
 
     try {
