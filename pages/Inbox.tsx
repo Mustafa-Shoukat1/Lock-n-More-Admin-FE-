@@ -108,14 +108,15 @@ const Inbox: React.FC = () => {
       <div className={`flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 ${selectedId ? 'hidden md:flex md:w-[350px] lg:w-[400px]' : 'flex w-full md:w-[350px] lg:w-[400px]'}`}>
         <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Omnichannel Hub</h2>
+            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Signals Hub</h2>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Signal</span>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Active Perimeter</span>
             </div>
           </div>
           
           <div className="grid grid-cols-4 gap-2">
+            {/* The requested "All" button at the front of the filter row */}
             <FilterButton 
               active={platformFilter === 'all'} 
               onClick={() => setPlatformFilter('all')} 
