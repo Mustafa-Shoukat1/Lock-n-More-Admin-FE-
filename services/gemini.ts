@@ -1,21 +1,30 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { db } from "./db";
 import { AiSettings, Platform } from "../types";
 
 export class GeminiService {
+  private getApiKey(): string {
+    // Safely retrieve the API key from the environment
+    return (window as any).process?.env?.API_KEY || "";
+  }
+
   /**
    * Generates a suggested response with full context of the product catalog.
    */
   async getAiResponseSuggestion(conversationContext: string, customerQuery: string, settings?: AiSettings) {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      console.warn("Gemini API Key is missing. Check your environment variables.");
+      return "The AI reasoning node is currently offline. Please configure the API key.";
+    }
+
     try {
       const data = db.load();
       const currentSettings = settings || data.aiSettings;
       const productContext = data.products.map(p => `- ${p.name}: RM${p.price} (${p.stock > 0 ? 'In Stock' : 'Out of Stock'}, SKU: ${p.sku})`).join('\n');
       
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       
-      // Extract platform for tone adjustment
       const isSocial = conversationContext.toLowerCase().includes('instagram') || conversationContext.toLowerCase().includes('tiktok');
       const isTiktok = conversationContext.toLowerCase().includes('tiktok');
       
@@ -25,7 +34,6 @@ export class GeminiService {
           ? "PLATFORM: Instagram. TONE: Visual and friendly. Use 1-2 emojis. Direct and helpful."
           : "PLATFORM: WhatsApp. TONE: Professional, efficient, use bullet points for specs.";
 
-      // Calculate temperature based on creativity (0-100 -> 0.1-1.2)
       const temperature = (currentSettings.creativity / 100) * 1.1 + 0.1;
       
       const response = await ai.models.generateContent({
@@ -58,8 +66,11 @@ export class GeminiService {
   }
 
   async analyzeSentiment(text: string) {
+    const apiKey = this.getApiKey();
+    if (!apiKey) return "Neutral";
+
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Analyze the following customer message and return ONLY one word: "Positive", "Neutral", "Negative", or "Frustrated". Message: "${text}"`,
