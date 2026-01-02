@@ -34,7 +34,9 @@ const Inbox: React.FC = () => {
   }, [selectedId]);
 
   useEffect(() => { 
-    if (activeChat) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+    if (activeChat || isAiLoading) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+    }
   }, [activeChat?.messages, isAiLoading]);
 
   const analyzeChatSentiment = async () => {
@@ -70,7 +72,7 @@ const Inbox: React.FC = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsRecording(false);
     if (selectedId && recordingTime > 0) {
-      sendMessage(selectedId, `Voice Message Captured (${recordingTime}s)`, 'staff', 'voice');
+      sendMessage(selectedId, `Voice Signal Captured (${recordingTime}s)`, 'staff', 'voice');
     }
     setRecordingTime(0);
   };
@@ -98,7 +100,7 @@ const Inbox: React.FC = () => {
       <div className={`flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 ${selectedId ? 'hidden md:flex md:w-[350px] lg:w-[400px]' : 'flex w-full md:w-[350px] lg:w-[400px]'}`}>
         <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Inbox</h2>
+            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Omnichannel</h2>
             <div className="flex items-center gap-2">
               <button onClick={() => setPlatformFilter('all')} className={`p-2 rounded-xl transition-all ${platformFilter === 'all' ? 'bg-brand text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="All Platforms">
                 <Filter size={16} />
@@ -106,7 +108,6 @@ const Inbox: React.FC = () => {
             </div>
           </div>
           
-          {/* Enhanced Three-Button Filter Hub */}
           <div className="grid grid-cols-3 gap-2">
             <FilterButton 
               active={platformFilter === 'whatsapp'} 
@@ -134,7 +135,7 @@ const Inbox: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto scrollbar-none">
           {filteredConversations.length === 0 ? (
-            <div className="p-20 text-center opacity-20"><Info size={40} className="mx-auto mb-4" /><p className="text-[10px] font-black uppercase">No Active Nodes</p></div>
+            <div className="p-20 text-center opacity-20"><Info size={40} className="mx-auto mb-4" /><p className="text-[10px] font-black uppercase tracking-widest">No Signals Captured</p></div>
           ) : filteredConversations.map(conv => (
             <div key={conv.id} onClick={() => setSelectedId(conv.id)} className={`px-5 py-5 cursor-pointer flex items-center gap-4 transition-all border-b border-slate-50 dark:border-slate-800/50 ${selectedId === conv.id ? 'bg-slate-100 dark:bg-slate-800 shadow-inner' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}`}>
               <div className="relative">
@@ -192,14 +193,14 @@ const Inbox: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                 <button onClick={() => toggleAi(selectedId!)} className={`p-2 rounded-xl transition-all ${activeChat?.aiEnabled ? 'bg-brand/10 text-brand' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="Toggle AI Presence">
+                 <button onClick={() => toggleAi(selectedId!)} className={`p-2 rounded-xl transition-all ${activeChat?.aiEnabled ? 'bg-brand/10 text-brand' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="AI Presence Toggle">
                    <Power size={20}/>
                  </button>
-                 <button onClick={fetchAiSuggestion} disabled={isAiLoading} className={`p-2 text-brand hover:bg-brand/10 rounded-xl transition-all ${isAiLoading ? 'animate-spin' : ''}`} title="AI Synthesis">
+                 <button onClick={fetchAiSuggestion} disabled={isAiLoading} className={`p-2 text-brand hover:bg-brand/10 rounded-xl transition-all ${isAiLoading ? 'animate-spin' : ''}`} title="Generate AI Draft">
                    {isAiLoading ? <Loader2 className="animate-spin" size={20}/> : <Sparkles size={20}/>}
                  </button>
-                 <button onClick={() => setShowInvoiceModal(true)} className="p-2 text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all" title="Deploy Invoice"><CreditCard size={20}/></button>
-                 <button onClick={() => setShowStaffPicker(true)} className="p-2 text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all" title="Assign Staff"><UserPlus size={20}/></button>
+                 <button onClick={() => setShowInvoiceModal(true)} className="p-2 text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all" title="Deploy Settlement Node"><CreditCard size={20}/></button>
+                 <button onClick={() => setShowStaffPicker(true)} className="p-2 text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all" title="Delegate Node Access"><UserPlus size={20}/></button>
               </div>
             </div>
             
@@ -222,10 +223,10 @@ const Inbox: React.FC = () => {
                 </div>
               ))}
               {isAiLoading && (
-                <div className="flex justify-end animate-in fade-in slide-in-from-right duration-300">
+                <div className="flex justify-end animate-in fade-in slide-in-from-right duration-500">
                   <div className="bg-brand text-white rounded-2xl rounded-br-none p-4 shadow-brand/20 flex items-center gap-3">
                     <Loader2 className="animate-spin" size={18} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">AI Hub Thinking...</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Cognitive Synthesis...</span>
                   </div>
                 </div>
               )}
@@ -236,14 +237,14 @@ const Inbox: React.FC = () => {
               {aiSuggestion && (
                 <div className="p-5 bg-slate-50 dark:bg-slate-800 rounded-3xl shadow-xl border border-brand/20 flex justify-between items-center animate-in slide-in-from-bottom duration-300 mb-2">
                    <div className="flex-1 text-left">
-                     <p className="text-[10px] font-black text-brand uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Sparkles size={12}/> Cognitive Proposal</p>
+                     <p className="text-[10px] font-black text-brand uppercase tracking-widest mb-1.5 flex items-center gap-1.5"><Sparkles size={12}/> Proposal Sync</p>
                      <p className="text-xs font-bold text-slate-600 dark:text-slate-300 italic line-clamp-2">
                        <SafeText text={aiSuggestion} />
                      </p>
                    </div>
                    <div className="flex gap-2 shrink-0 ml-6">
                      <button onClick={() => setAiSuggestion(null)} className="p-2.5 text-slate-400 hover:text-red-500 transition-colors"><X size={20}/></button>
-                     <button onClick={() => {setInputText(aiSuggestion); setAiSuggestion(null);}} className="px-6 py-2.5 bg-brand text-white text-[10px] font-black uppercase rounded-2xl shadow-lg hover:bg-blue-700 transition-all">Apply</button>
+                     <button onClick={() => {setInputText(aiSuggestion); setAiSuggestion(null);}} className="px-6 py-2.5 bg-brand text-white text-[10px] font-black uppercase rounded-2xl shadow-lg hover:bg-blue-700 transition-all">Inject</button>
                    </div>
                 </div>
               )}
@@ -255,7 +256,7 @@ const Inbox: React.FC = () => {
                     <div className="flex-1 flex justify-between items-center text-[10px] font-black text-red-500 py-3">
                       <div className="flex items-center gap-3">
                         <Circle size={10} className="fill-red-500 animate-pulse" />
-                        <span className="uppercase tracking-[0.2em]">Capturing Signal...</span>
+                        <span className="uppercase tracking-[0.2em]">Capturing Signal Node...</span>
                       </div>
                       <span className="font-mono text-base">{formatTime(recordingTime)}</span>
                     </div>
@@ -263,7 +264,7 @@ const Inbox: React.FC = () => {
                     <input 
                       type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} 
                       onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                      placeholder={`Message via ${activeChat?.platform.toUpperCase()}...`} 
+                      placeholder={`Signal via ${activeChat?.platform.toUpperCase()}...`} 
                       className="w-full py-4 bg-transparent text-sm outline-none font-medium text-slate-900 dark:text-white" 
                     />
                   )}
@@ -289,8 +290,8 @@ const Inbox: React.FC = () => {
             <div className="w-40 h-40 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mb-8 border border-slate-200 dark:border-slate-800 shadow-inner">
                <Grid size={80} className="text-slate-300"/>
             </div>
-            <h3 className="text-3xl font-bold font-outfit uppercase tracking-tighter text-slate-400">Hub Initialized</h3>
-            <p className="text-[11px] font-black uppercase tracking-[0.5em] mt-5 text-slate-500 text-center max-w-xs leading-loose">Await signal injection or select a perimeter node to begin.</p>
+            <h3 className="text-3xl font-bold font-outfit uppercase tracking-tighter text-slate-400">Hub Online</h3>
+            <p className="text-[11px] font-black uppercase tracking-[0.5em] mt-5 text-slate-500 text-center max-w-xs leading-loose">Await signal injection or authorize a perimeter node to begin.</p>
           </div>
         )}
       </div>
@@ -298,14 +299,14 @@ const Inbox: React.FC = () => {
       {showStaffPicker && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
           <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-12 border border-slate-200 dark:border-slate-800 shadow-2xl animate-in zoom-in duration-300">
-             <div className="flex items-center justify-between mb-10 text-left"><h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter leading-none">Assign Node</h3><button onClick={() => setShowStaffPicker(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><X size={24}/></button></div>
+             <div className="flex items-center justify-between mb-10 text-left"><h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter leading-none">Delegate Access</h3><button onClick={() => setShowStaffPicker(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><X size={24}/></button></div>
              <div className="space-y-4">
                 {staff.map(s => (
                   <button key={s.id} onClick={() => {assignStaff(selectedId!, s.name); setShowStaffPicker(false);}} className="w-full flex items-center gap-5 p-6 rounded-[2rem] hover:bg-brand/5 border border-transparent hover:border-brand/20 text-left transition-all group">
                     <div className="w-12 h-12 rounded-2xl bg-brand/10 group-hover:bg-brand group-hover:text-white flex items-center justify-center text-brand font-black text-base transition-colors">{s.name.charAt(0)}</div>
                     <div className="flex-1">
                       <p className="text-base font-bold text-slate-900 dark:text-white group-hover:text-brand transition-colors">{s.name}</p>
-                      <p className="text-[10px] font-black uppercase text-brand tracking-widest mt-1.5 opacity-60">{s.role.replace('_', ' ')} Node</p>
+                      <p className="text-[10px] font-black uppercase text-brand tracking-widest mt-1.5 opacity-60">{s.role.replace('_', ' ')} Hub</p>
                     </div>
                   </button>
                 ))}
@@ -317,12 +318,12 @@ const Inbox: React.FC = () => {
       {showInvoiceModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
           <div className="bg-white dark:bg-slate-900 w-full max-w-xs rounded-[3rem] p-12 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in duration-300 text-center">
-             <div className="flex items-center justify-between mb-10 text-left"><h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter leading-none">Commerce</h3><button onClick={() => setShowInvoiceModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><X size={24}/></button></div>
+             <div className="flex items-center justify-between mb-10 text-left"><h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter leading-none">Authorize</h3><button onClick={() => setShowInvoiceModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><X size={24}/></button></div>
              <div className="p-8 bg-slate-50 dark:bg-slate-950/50 rounded-3xl mb-10 border border-slate-100 dark:border-slate-800 text-left shadow-inner">
-                <p className="text-[9px] font-black uppercase text-slate-400 mb-3 tracking-widest">Settlement (RM)</p>
+                <p className="text-[9px] font-black uppercase text-slate-400 mb-3 tracking-widest">Settlement Index (RM)</p>
                 <input type="number" value={invoiceAmount} onChange={(e)=>setInvoiceAmount(e.target.value)} className="w-full bg-transparent text-5xl font-black font-outfit outline-none focus:text-brand" autoFocus />
              </div>
-             <button onClick={() => {generateInvoice(selectedId!, parseFloat(invoiceAmount)); setShowInvoiceModal(false);}} className="w-full py-6 bg-brand text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-brand/30 hover:scale-105 active:scale-95 transition-all">Authorize Release</button>
+             <button onClick={() => {generateInvoice(selectedId!, parseFloat(invoiceAmount)); setShowInvoiceModal(false);}} className="w-full py-6 bg-brand text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-brand/30 hover:scale-105 active:scale-95 transition-all">Issue Settlement</button>
           </div>
         </div>
       )}
@@ -330,21 +331,14 @@ const Inbox: React.FC = () => {
   );
 };
 
-// Enhanced Status Indicators for Outbound Messages
 const MessageStatus = ({ status, dark }: { status: 'sent' | 'delivered' | 'read', dark?: boolean }) => {
   const baseColor = dark ? 'text-white/40' : 'text-slate-300';
   const deliveredColor = dark ? 'text-white/80' : 'text-slate-500';
   const readColor = dark ? 'text-white' : 'text-brand';
   
-  if (status === 'sent') {
-    return <Check size={14} className={baseColor} />;
-  }
-  if (status === 'delivered') {
-    return <CheckCheck size={14} className={deliveredColor} />;
-  }
-  if (status === 'read') {
-    return <CheckCheck size={14} className={readColor} />;
-  }
+  if (status === 'sent') return <Check size={14} className={baseColor} />;
+  if (status === 'delivered') return <CheckCheck size={14} className={deliveredColor} />;
+  if (status === 'read') return <CheckCheck size={14} className={readColor} />;
   return null;
 };
 

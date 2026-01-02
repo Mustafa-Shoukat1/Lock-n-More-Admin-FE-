@@ -141,15 +141,15 @@ const App: React.FC = () => {
   const setActiveUser = (u: UserType | null) => {
     setActiveUserInternal(u);
     if (u) {
-      addLog('info', `Identity node ${u.name} successfully authenticated.`);
+      addLog('info', `Node [${u.name}] session established with [${u.role}] scope.`);
       const updatedStaff = data.staff.map(s => s.id === u.id ? { ...s, lastLogin: 'Active Now' } : s);
       updateData({ staff: updatedStaff });
     }
   };
 
   const resetDatabase = () => {
-    if (confirm("Authorize full perimeter reset? All persistent nodes will be wiped.")) {
-      addLog('warning', 'Master reset signal dispatched. Local storage cleared.');
+    if (confirm("Critical: Full data purge requested. Reset perimeter to default state?")) {
+      addLog('error', 'Master purge signal confirmed. Local node data cleared.');
       const fresh = db.reset();
       setData(fresh);
       window.location.reload();
@@ -161,7 +161,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isLoggedIn) return;
     const interval = setInterval(() => {
-      if (Math.random() > 0.7) simulateLead();
+      if (Math.random() > 0.8) simulateLead();
     }, 45000);
     return () => clearInterval(interval);
   }, [isLoggedIn]);
@@ -181,7 +181,7 @@ const App: React.FC = () => {
       const updatedConv = prev.conversations.map(c => c.id === convId ? {
         ...c,
         messages: [...c.messages, newMsg],
-        lastMessage: type === 'voice' ? 'Voice Message' : (type === 'image' ? 'Sent an image' : text),
+        lastMessage: type === 'voice' ? 'Voice Message' : (type === 'image' ? 'Media Attachment' : text),
         lastTimestamp: timestamp,
         unreadCount: sender === 'customer' ? c.unreadCount + 1 : 0
       } : c);
@@ -194,17 +194,23 @@ const App: React.FC = () => {
         handleAiAutoReply(target, text);
       }
       
-      // Simulate status progression for staff/ai
       if (sender !== 'customer') {
-        setTimeout(() => updateMessageStatus(convId, msgId, 'delivered'), 1500);
-        setTimeout(() => updateMessageStatus(convId, msgId, 'read'), 3000);
+        setTimeout(() => {
+          updateMessageStatus(convId, msgId, 'delivered');
+          addLog('info', `Message [${msgId}] delivered to remote gateway.`);
+        }, 1200 + Math.random() * 800);
+        
+        setTimeout(() => {
+          updateMessageStatus(convId, msgId, 'read');
+          addLog('success', `Message [${msgId}] confirmed read by recipient.`);
+        }, 3500 + Math.random() * 1500);
       }
       
       return next;
     });
 
-    if (sender === 'ai') addLog('ai', `AI Synthesis node responded to conversation ${convId}.`);
-    else if (sender === 'staff') addLog('info', `Manual signal released to node ${convId}.`);
+    if (sender === 'ai') addLog('ai', `AI Synthesis node [${convId}] dispatched response.`);
+    else if (sender === 'staff') addLog('info', `Manual operator signal released to perimeter [${convId}].`);
   };
 
   const updateMessageStatus = (convId: string, msgId: string, status: 'delivered' | 'read') => {
@@ -221,20 +227,20 @@ const App: React.FC = () => {
 
   const handleAiAutoReply = async (conv: Conversation, query: string) => {
     try {
-      addLog('ai', `Gemini 3 Flash analyzing ${conv.platform} signal: "${query.substring(0, 15)}..."`);
+      addLog('ai', `Gemini 3 Flash: Logic analysis initiated for [${conv.customerName}]...`);
       setTimeout(async () => {
         const history = conv.messages.map(m => `${m.sender}: ${m.text}`).join('\n');
         const suggestion = await gemini.getAiResponseSuggestion(`Platform: ${conv.platform}\nHistory:\n${history}`, query, dataRef.current.aiSettings);
         sendMessage(conv.id, suggestion, 'ai');
-      }, 2000);
+      }, 2500);
     } catch (e) {
-      addLog('error', 'Neural Core Exception: AI failed to synthesize response.');
+      addLog('error', 'AI Neural Core Exception: Synthesis pipeline failed.');
     }
   };
 
   const assignStaff = (convId: string, staffName: string) => {
     setConversations(data.conversations.map(c => c.id === convId ? { ...c, assignedStaff: staffName, isHumanTakeover: true, aiEnabled: false } : c));
-    addLog('success', `Perimeter node ${convId} assigned to ${staffName}.`);
+    addLog('success', `Operator [${staffName}] attached to node [${convId}]. AI logic suspended.`);
     playNotificationSound();
   };
 
@@ -242,7 +248,7 @@ const App: React.FC = () => {
     const currentConv = data.conversations.find(c => c.id === convId);
     const newState = !currentConv?.aiEnabled;
     setConversations(data.conversations.map(c => c.id === convId ? { ...c, aiEnabled: newState, isHumanTakeover: !newState } : c));
-    addLog('ai', `Cognitive Hub ${newState ? 'Enabled' : 'Disabled'} for node ${convId}.`);
+    addLog('ai', `Cognitive Hub [${convId}] shifted to [${newState ? 'AUTO' : 'MANUAL'}] mode.`);
   };
 
   const markAsOpened = (convId: string) => {
@@ -252,8 +258,8 @@ const App: React.FC = () => {
   const generateInvoice = (convId: string, amount: number) => {
     const id = `#TOTO-${Date.now().toString().slice(-4)}`;
     setOrders([{ id, customer: data.conversations.find(c => c.id === convId)?.customerName || 'Customer', status: 'pending', amount, date: 'Just Now', platform: 'whatsapp' }, ...data.orders]);
-    sendMessage(convId, `Invoice ${id} for RM ${amount} issued.`, 'staff');
-    addLog('success', `Financial Node initialized: Invoice ${id}.`);
+    sendMessage(convId, `Order Node ${id} initialized for RM ${amount}. Proceed to settlement.`, 'staff');
+    addLog('success', `Commerce Settlement Node [${id}] deployed for [RM ${amount}].`);
   };
 
   const simulateLead = (isSilent = false) => {
@@ -268,7 +274,7 @@ const App: React.FC = () => {
     const names = ["Mohd Hafiz", "Siew Ling", "Ravi Shankar", "Evelyn Tan", "Zul Ariffin", "Kimmy IG", "TikTok User 44"];
     const name = names[Math.floor(Math.random() * names.length)];
     const id = Date.now().toString();
-    const queries = ["Price for A100?", "Is installation available in KL?", "Warranty for gate locks?", "Promo for new users?"];
+    const queries = ["Price for A100?", "Is installation available in KL?", "Warranty for gate locks?", "Promo for new users?", "How long to ship to JB?"];
     const query = queries[Math.floor(Math.random() * queries.length)];
 
     const newConv: Conversation = {
@@ -280,20 +286,20 @@ const App: React.FC = () => {
     setConversations([newConv, ...dataRef.current.conversations]);
     if (!isSilent) {
       playNotificationSound();
-      addLog('warning', `New ${platform.toUpperCase()} lead captured: ${name}.`);
-      setNotifications(prev => [{ id: Date.now(), title: 'Incoming Signal', message: `${platform}: ${name}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
+      addLog('warning', `Perimeter breach: New [${platform.toUpperCase()}] signal from [${name}].`);
+      setNotifications(prev => [{ id: Date.now(), title: 'Priority Signal', message: `${platform}: ${name}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
     }
   };
 
   const stressTest = () => {
-    addLog('error', 'System Stress Test initiated. Burst signal injection active.');
-    for(let i=0; i<5; i++) {
-      setTimeout(() => simulateLead(true), i * 300);
+    addLog('error', 'STRESS TEST: High-frequency signal burst initiated.');
+    for(let i=0; i<6; i++) {
+      setTimeout(() => simulateLead(true), i * 400 + (Math.random() * 200));
     }
   };
 
   const syncCatalog = () => {
-    addLog('info', 'Shopify Master Catalog synchronization in progress...');
+    addLog('info', 'Establishing Shopify Admin Node handshake...');
     setTimeout(() => {
       const updatedProducts = data.products.map(p => ({
         ...p,
@@ -301,8 +307,8 @@ const App: React.FC = () => {
         price: p.price + (Math.random() > 0.8 ? (Math.random() * 20 - 10) : 0)
       }));
       setProducts(updatedProducts);
-      addLog('success', 'Commerce Node synchronized. Inventory verified.');
-    }, 1500);
+      addLog('success', 'Master Catalog synchronized. SKU inventory data verified.');
+    }, 1200);
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
