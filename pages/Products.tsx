@@ -82,8 +82,8 @@ const Products: React.FC = () => {
     });
   }, [products, search, activeCategory, stockFilter, priceRange]);
 
-  // Fixed: Explicitly typed as string[] to fix TS error in the map function where 'c' was inferred as unknown
-  const categories: string[] = ['all', ...Array.from(new Set(products.map(p => p.category.toLowerCase())))];
+  // Fixed: Use explicit generic for Set to ensure correctly typed array from Array.from and avoid 'unknown' type error
+  const categories: string[] = ['all', ...Array.from(new Set<string>(products.map(p => p.category.toLowerCase())))];
 
   return (
     <div className="p-6 md:p-12 space-y-10 max-w-7xl mx-auto pb-32 text-left">

@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronLeft, MessageSquare, Zap, UserCheck, Send, CheckCheck, Check, X, Box, Mic, Square, CreditCard, Sparkles, RefreshCw, Play, UserPlus, Info, Phone, MoreVertical, Circle, Power, Heart, Image as ImageIcon, FolderOpen, Grid, Loader2, Filter } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Zap, UserCheck, Send, CheckCheck, Check, X, Box, Mic, Square, CreditCard, Sparkles, RefreshCw, Play, UserPlus, Info, Phone, MoreVertical, Circle, Power, Heart, Image as ImageIcon, FolderOpen, Grid, Loader2, Filter, Reply, LayoutGrid, ShieldCheck, User, Globe } from 'lucide-react';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
 import { useApp, SafeText } from '../App';
-import { Platform } from '../types';
+import { Platform, Product } from '../types';
 import { gemini } from '../services/gemini';
 
 const Inbox: React.FC = () => {
@@ -14,6 +14,7 @@ const Inbox: React.FC = () => {
   const [showStaffPicker, setShowStaffPicker] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceAmount, setInvoiceAmount] = useState('0');
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -62,6 +63,12 @@ const Inbox: React.FC = () => {
     setAiSuggestion(null);
   };
 
+  const deployQuickMedia = (p: Product) => {
+    if (!selectedId) return;
+    sendMessage(selectedId, `Check out our ${p.name}! It's currently RM ${p.price}.`, 'staff', 'image', p.image);
+    setShowMediaLibrary(false);
+  };
+
   const startRecording = () => {
     setIsRecording(true);
     setRecordingTime(0);
@@ -97,37 +104,44 @@ const Inbox: React.FC = () => {
 
   return (
     <div className="flex h-full bg-slate-50 dark:bg-slate-950 overflow-hidden relative font-inter text-left">
+      {/* LEFT: Conversations List */}
       <div className={`flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 ${selectedId ? 'hidden md:flex md:w-[350px] lg:w-[400px]' : 'flex w-full md:w-[350px] lg:w-[400px]'}`}>
         <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Omnichannel</h2>
+            <h2 className="text-xl sm:text-2xl font-bold font-outfit text-slate-900 dark:text-white uppercase tracking-tighter leading-none">Omnichannel Hub</h2>
             <div className="flex items-center gap-2">
-              <button onClick={() => setPlatformFilter('all')} className={`p-2 rounded-xl transition-all ${platformFilter === 'all' ? 'bg-brand text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="All Platforms">
-                <Filter size={16} />
-              </button>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Signal</span>
             </div>
           </div>
           
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
+            <FilterButton 
+              active={platformFilter === 'all'} 
+              onClick={() => setPlatformFilter('all')} 
+              icon={<Globe size={18} />} 
+              label="All"
+              activeClass="bg-slate-900 text-white shadow-slate-900/20 dark:bg-slate-100 dark:text-slate-900"
+            />
             <FilterButton 
               active={platformFilter === 'whatsapp'} 
               onClick={() => setPlatformFilter('whatsapp')} 
               icon={<WhatsAppIcon size={18} />} 
-              label="WhatsApp"
+              label="WA"
               activeClass="bg-emerald-500 text-white shadow-emerald-500/20"
             />
             <FilterButton 
               active={platformFilter === 'instagram'} 
               onClick={() => setPlatformFilter('instagram')} 
               icon={<InstagramIcon size={18} />} 
-              label="Instagram"
+              label="IG"
               activeClass="bg-pink-600 text-white shadow-pink-600/20"
             />
             <FilterButton 
               active={platformFilter === 'tiktok'} 
               onClick={() => setPlatformFilter('tiktok')} 
               icon={<TikTokIcon size={18} />} 
-              label="TikTok"
+              label="TT"
               activeClass="bg-black text-white shadow-black/20"
             />
           </div>
@@ -163,6 +177,7 @@ const Inbox: React.FC = () => {
         </div>
       </div>
 
+      {/* CENTER: Chat Interface */}
       <div className={`flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950 relative ${selectedId ? 'flex' : 'hidden md:flex'}`}>
         {selectedId ? (
           <>
@@ -173,9 +188,6 @@ const Inbox: React.FC = () => {
                 <div className="truncate text-left">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate leading-none">{activeChat?.customerName}</h3>
-                    <span className="hidden sm:inline-block text-[8px] font-black text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 uppercase tracking-tighter">
-                      {activeChat?.platform === 'whatsapp' ? activeChat.customerPhone : activeChat?.customerPhone}
-                    </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1.5">
                     <p className={`text-[9px] font-black uppercase flex items-center gap-1 tracking-widest leading-none ${activeChat?.aiEnabled ? 'text-brand animate-pulse' : 'text-emerald-500'}`}>
@@ -212,12 +224,21 @@ const Inbox: React.FC = () => {
                     msg.sender === 'ai' ? 'bg-brand text-white rounded-br-none shadow-brand/20' :
                     'bg-emerald-100 dark:bg-emerald-900 text-slate-900 dark:text-slate-100 font-medium rounded-br-none border border-emerald-200/50 dark:border-emerald-800/50'
                   }`}>
-                    <div className="text-left">
+                    <div className="text-left space-y-2">
+                       {msg.mediaUrl && <img src={msg.mediaUrl} className="w-full h-32 object-cover rounded-lg mb-2 border border-black/5" />}
                        <p className="text-sm font-medium leading-relaxed"><SafeText text={msg.text} /></p>
                     </div>
-                    <div className={`flex items-center justify-end gap-1.5 mt-2 text-[9px] font-bold uppercase tracking-widest ${msg.sender === 'ai' ? 'text-white/70' : 'text-slate-400'}`}>
-                      <span>{msg.timestamp}</span>
-                      {msg.sender !== 'customer' && <MessageStatus status={msg.status || 'sent'} dark={msg.sender === 'ai'} />}
+                    
+                    {/* Multi-Agent Accountability Bar */}
+                    <div className={`flex items-center justify-between gap-1.5 mt-2 text-[9px] font-black uppercase tracking-widest ${msg.sender === 'ai' ? 'text-white/70' : 'text-slate-400'}`}>
+                      <div className="flex items-center gap-1.5">
+                         {msg.sender === 'ai' ? <Sparkles size={8}/> : (msg.sender === 'staff' ? <ShieldCheck size={8}/> : <User size={8}/>)}
+                         <span>{msg.sender === 'ai' ? 'Replied by AI' : (msg.sender === 'staff' ? `By ${activeChat.assignedStaff || 'Operator'}` : 'Customer')}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                         <span>{msg.timestamp}</span>
+                         {msg.sender !== 'customer' && <MessageStatus status={msg.status || 'sent'} dark={msg.sender === 'ai'} />}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -232,6 +253,32 @@ const Inbox: React.FC = () => {
               )}
               <div ref={chatEndRef} />
             </div>
+
+            {/* QUICK MEDIA / REPLIES DRAWER */}
+            {showMediaLibrary && (
+               <div className="absolute inset-x-0 bottom-[4.5rem] p-4 z-40 animate-in slide-in-from-bottom-4 duration-300">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-2xl p-6">
+                     <div className="flex items-center justify-between mb-4 px-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Media Library & Quick Replies</h4>
+                        <button onClick={() => setShowMediaLibrary(false)} className="text-slate-400"><X size={16}/></button>
+                     </div>
+                     <div className="flex gap-4 overflow-x-auto scrollbar-none pb-2">
+                        {products.slice(0, 8).map(p => (
+                           <button 
+                            key={p.id} 
+                            onClick={() => deployQuickMedia(p)}
+                            className="flex-shrink-0 w-24 space-y-2 group"
+                           >
+                              <div className="w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 group-hover:border-brand transition-all">
+                                 <img src={p.image} className="w-full h-full object-cover" />
+                              </div>
+                              <p className="text-[8px] font-black uppercase truncate text-slate-500">{p.sku}</p>
+                           </button>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+            )}
 
             <div className="p-4 bg-white dark:bg-slate-900 flex flex-col gap-2 relative z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] border-t border-slate-200 dark:border-slate-800">
               {aiSuggestion && (
@@ -250,7 +297,9 @@ const Inbox: React.FC = () => {
               )}
               
               <div className="flex items-center gap-3 h-14">
-                <button className="p-2.5 transition-all rounded-full text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800"><ImageIcon size={24}/></button>
+                <button onClick={() => setShowMediaLibrary(!showMediaLibrary)} className={`p-2.5 transition-all rounded-full ${showMediaLibrary ? 'bg-brand text-white shadow-lg' : 'text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800'}`} title="Quick Media & Catalog">
+                  <LayoutGrid size={24}/>
+                </button>
                 <div className={`flex-1 bg-slate-50 dark:bg-slate-800 rounded-2xl px-5 flex items-center border border-slate-200 dark:border-slate-700 transition-all ${isRecording ? 'border-red-500 ring-4 ring-red-500/10' : 'focus-within:border-brand/50 shadow-inner'}`}>
                   {isRecording ? (
                     <div className="flex-1 flex justify-between items-center text-[10px] font-black text-red-500 py-3">
@@ -345,20 +394,14 @@ const MessageStatus = ({ status, dark }: { status: 'sent' | 'delivered' | 'read'
 const FilterButton = ({ active, onClick, icon, label, activeClass }: any) => (
   <button 
     onClick={onClick} 
-    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all duration-300 ${
+    className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl border transition-all duration-300 ${
       active 
         ? `${activeClass} border-transparent scale-105 shadow-lg` 
         : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-200 dark:hover:border-slate-700'
     }`}
   >
     <div className={`transition-transform duration-300 ${active ? 'scale-110' : ''}`}>{icon}</div>
-    <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
-  </button>
-);
-
-const FilterBtn = ({ active, onClick, icon, label }: any) => (
-  <button onClick={onClick} className={`flex-1 flex items-center justify-center py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${active ? 'bg-brand text-white shadow-xl' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-    {icon || label}
+    <span className="text-[8px] font-black uppercase tracking-tighter">{label}</span>
   </button>
 );
 
