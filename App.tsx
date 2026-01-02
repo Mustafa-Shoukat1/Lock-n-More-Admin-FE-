@@ -174,7 +174,8 @@ const App: React.FC = () => {
 
   const sendMessage = (convId: string, text: string, sender: 'staff' | 'ai' | 'customer', type: 'text' | 'image' | 'voice' = 'text', mediaUrl?: string) => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsg: Message = { id: Math.random().toString(36).substr(2, 9), sender, text, timestamp, type, status: 'sent', mediaUrl };
+    const msgId = Math.random().toString(36).substr(2, 9);
+    const newMsg: Message = { id: msgId, sender, text, timestamp, type, status: 'sent', mediaUrl };
     
     setData(prev => {
       const updatedConv = prev.conversations.map(c => c.id === convId ? {
@@ -193,11 +194,29 @@ const App: React.FC = () => {
         handleAiAutoReply(target, text);
       }
       
+      // Simulate status progression for staff/ai
+      if (sender !== 'customer') {
+        setTimeout(() => updateMessageStatus(convId, msgId, 'delivered'), 1500);
+        setTimeout(() => updateMessageStatus(convId, msgId, 'read'), 3000);
+      }
+      
       return next;
     });
 
     if (sender === 'ai') addLog('ai', `AI Synthesis node responded to conversation ${convId}.`);
     else if (sender === 'staff') addLog('info', `Manual signal released to node ${convId}.`);
+  };
+
+  const updateMessageStatus = (convId: string, msgId: string, status: 'delivered' | 'read') => {
+    setData(prev => {
+      const updatedConv = prev.conversations.map(c => c.id === convId ? {
+        ...c,
+        messages: c.messages.map(m => m.id === msgId ? { ...m, status } : m)
+      } : c);
+      const next = { ...prev, conversations: updatedConv };
+      db.save(next);
+      return next;
+    });
   };
 
   const handleAiAutoReply = async (conv: Conversation, query: string) => {
