@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Trash2, Smartphone, Zap, Activity, Mail, LogOut, MailPlus, CheckCircle2, X, AlertTriangle, ShieldAlert, Key, Globe, Database, RefreshCw } from 'lucide-react';
+import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Trash2, Smartphone, Zap, Activity, Mail, LogOut, MailPlus, CheckCircle2, X, AlertTriangle, ShieldAlert, Key, Globe, Database, RefreshCw, MessageCircle, Settings as SettingsIcon } from 'lucide-react';
 import { useApp } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
@@ -65,7 +65,6 @@ const Settings: React.FC = () => {
   const toggleIntegration = (key: keyof typeof integrationSettings) => {
     const newVal = !integrationSettings[key];
     setIntegrationSettings({ ...integrationSettings, [key]: newVal });
-    // Fixed: Cast 'key' to string to fix TS error where 'replace' does not exist on 'string | number | symbol'
     addLog('ai', `${(key as string).replace('Enabled', '').toUpperCase()} Perimeter Node ${newVal ? 'Activated' : 'Suspended'}.`);
   };
 
@@ -82,7 +81,7 @@ const Settings: React.FC = () => {
             <span className="text-[11px] font-black uppercase tracking-[0.4em]">Node ID: Super Admin Alpha</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold font-outfit tracking-tighter leading-none">Command Center</h1>
-          <p className="text-slate-400 font-medium text-lg max-w-2xl">Mustafa Shoukat, your root-level perimeter controls are centralized here. Manage identity, team access, and system integrity.</p>
+          <p className="text-slate-400 font-medium text-lg max-w-2xl">Manage your identity, team nodes, and core perimeter integrations from this central authorization hub.</p>
         </div>
         <div className="relative z-10 flex flex-col gap-4 w-full lg:w-auto">
            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-widest bg-white/5 px-4 py-2 rounded-full mb-2">
@@ -144,23 +143,39 @@ const Settings: React.FC = () => {
                 </div>
               </HubSection>
 
-              <HubSection title="System Diagnostics" description="Test high-fidelity notification perimeters and signal tunes.">
-                <div className="p-10 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[4rem] flex flex-col md:flex-row items-center justify-between gap-10 shadow-sm">
-                  <div className="flex items-center gap-8 text-left">
-                    <div className="p-6 bg-brand/10 text-brand rounded-[2rem] shadow-inner">
-                      <Volume2 size={40} />
+              <HubSection title="Diagnostic Sound Hub" description="Authorized testing of notification signal perimeters. Ensure audio fidelity is optimal for your node environment.">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                  <div className="p-8 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] flex flex-col items-center gap-6 shadow-sm transition-all hover:border-brand/20">
+                    <div className="p-5 bg-emerald-500/10 text-emerald-500 rounded-2xl">
+                      <MessageCircle size={32} />
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold font-outfit">Lead Notification Signal</p>
-                      <p className="text-[11px] text-slate-500 font-black uppercase tracking-widest mt-2 leading-relaxed">Authorized Signal Tone (v1.0.4)</p>
+                    <div className="text-center">
+                      <p className="text-lg font-bold font-outfit">Message Node Signal</p>
+                      <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Incoming Lead Alerts</p>
                     </div>
+                    <button 
+                      onClick={() => playNotificationSound('message')}
+                      className="w-full py-4 bg-white dark:bg-slate-800 text-emerald-500 font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Zap size={14} fill="currentColor"/> Test Message Node
+                    </button>
                   </div>
-                  <button 
-                    onClick={playNotificationSound}
-                    className="w-full md:w-auto px-10 py-5 bg-white dark:bg-slate-800 text-brand dark:text-white rounded-[2rem] font-black text-[11px] uppercase tracking-widest shadow-xl border border-slate-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-4"
-                  >
-                    <Zap size={22} fill="currentColor"/> Trigger Signal Node
-                  </button>
+
+                  <div className="p-8 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[3rem] flex flex-col items-center gap-6 shadow-sm transition-all hover:border-brand/20">
+                    <div className="p-5 bg-brand/10 text-brand rounded-2xl">
+                      <SettingsIcon size={32} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold font-outfit">System Alert Signal</p>
+                      <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Diagnostic & Logic Alerts</p>
+                    </div>
+                    <button 
+                      onClick={() => playNotificationSound('system')}
+                      className="w-full py-4 bg-white dark:bg-slate-800 text-brand font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Zap size={14} fill="currentColor"/> Test System Node
+                    </button>
+                  </div>
                 </div>
               </HubSection>
             </div>

@@ -18,7 +18,10 @@ import { translations } from './i18n';
 import { db } from './services/db';
 import { gemini } from './services/gemini';
 
-const NOTIFICATION_SOUND_URL = 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3';
+const SOUNDS = {
+  message: 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3',
+  system: 'https://cdn.pixabay.com/audio/2021/08/04/audio_0625c153f0.mp3'
+};
 
 export const SafeText: React.FC<{ text: string }> = ({ text }) => {
   if (!text) return null;
@@ -81,7 +84,7 @@ interface AppContextType {
   syncCatalog: () => void;
   isSidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-  playNotificationSound: () => void;
+  playNotificationSound: (type?: 'message' | 'system') => void;
   resetDatabase: () => void;
 }
 
@@ -151,6 +154,7 @@ const App: React.FC = () => {
   const resetDatabase = () => {
     if (confirm("Critical: Full data purge requested. Reset perimeter to default state?")) {
       addLog('error', 'Master purge signal confirmed. Local node data cleared.');
+      playNotificationSound('system');
       const fresh = db.reset();
       setData(fresh);
       window.location.reload();
@@ -167,9 +171,10 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isLoggedIn]);
 
-  const playNotificationSound = () => {
-    const audio = new Audio(NOTIFICATION_SOUND_URL);
-    audio.volume = 0.4;
+  const playNotificationSound = (type: 'message' | 'system' = 'message') => {
+    const url = SOUNDS[type];
+    const audio = new Audio(url);
+    audio.volume = type === 'message' ? 0.4 : 0.3;
     audio.play().catch(() => {});
   };
 
@@ -274,7 +279,7 @@ const App: React.FC = () => {
       return updated;
     });
     addLog('success', `Operator [${staffName}] attached to node [${convId}]. AI logic suspended.`);
-    playNotificationSound();
+    playNotificationSound('message');
   };
 
   const toggleAi = (convId: string) => {
@@ -355,7 +360,7 @@ const App: React.FC = () => {
     });
 
     if (!isSilent) {
-      playNotificationSound();
+      playNotificationSound('message');
       addLog('warning', `Perimeter breach: New [${platform.toUpperCase()}] signal from [${name}].`);
       setNotifications(prev => [{ id: Date.now(), title: 'Priority Signal', message: `${platform}: ${name}`, type: 'lead', time: 'Just Now', read: false }, ...prev]);
     }
@@ -381,6 +386,7 @@ const App: React.FC = () => {
     setTimeout(() => {
         addLog('success', 'AUDIT: AI Neural core (Gemini 3 Flash) responding within 2.5s threshold.');
         addLog('info', 'SYSTEM READY FOR PRODUCTION DEPLOYMENT.');
+        playNotificationSound('system');
     }, 4500);
   };
 
@@ -398,6 +404,7 @@ const App: React.FC = () => {
         return next;
       });
       addLog('success', 'Master Catalog synchronized. SKU inventory data verified.');
+      playNotificationSound('system');
     }, 1200);
   };
 
