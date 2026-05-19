@@ -63,6 +63,22 @@ app.use('/ai', aiRoutes);
 app.use('/ai-settings', aiSettingsRoutes);
 app.use('/performance', agentPerformanceRoutes); // Register performance routes
 app.use('/followup', followupRoutes); // Register follow-up routes
+
+// Mirror all routes under /api/* for backward compatibility with existing Meta webhooks
+app.use('/api/health', healthRoutes);
+app.use('/api/shopify', shopifyRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/instagram', instagramRoutes);
+app.use('/api/tiktok', tiktokRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/ai-settings', aiSettingsRoutes);
+app.use('/api/performance', agentPerformanceRoutes);
+app.use('/api/followup', followupRoutes);
+
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Base route
