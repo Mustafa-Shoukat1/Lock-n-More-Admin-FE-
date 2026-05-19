@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Integration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            max-width: 100%;
+        }
+
+        h1 {
+            color: #128C7E;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            color: #128C7E;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .contact-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .contact-item {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contact-name {
+            font-weight: bold;
+        }
+
+        .contact-phone {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .send-btn {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .send-btn:hover {
+            background-color: #128C7E;
+        }
+
+        #status {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .clickable {
+            cursor: pointer;
+        }
+
+        .clickable:hover {
+            background-color: #e9e9e9;
+        }
+
+        #chatHistory {
+            margin-top: 2rem;
+            border-top: 1px solid #ccc;
+            padding-top: 1rem;
+        }
+
+        #messagesContainer {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #e5ddd5;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .message-bubble {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            max-width: 80%;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-from-user {
+            background-color: #fff;
+            margin-right: auto;
+        }
+
+        .message-from-system {
+            background-color: #dcf8c6;
+            margin-left: auto;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: #999;
+            text-align: right;
+        }
+
+        .close-btn {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.5rem;
+            background: #ccc;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>WhatsApp Contacts</h1>
+        <ul class="contact-list" id="contactList">
+            <!-- Contacts will be populated here -->
+        </ul>
+        <div id="status"></div>
+
+        <h2>Conversations</h2>
+        <ul class="contact-list" id="conversationList">
+            <!-- Conversations will be populated here -->
+        </ul>
+
+        <div id="chatHistory" style="display:none;">
+            <h3 style="color: #128C7E; text-align: center;">Chat with <span id="chatWith"></span></h3>
+            <div id="sessionInfo"
+                style="text-align: center; font-size: 0.8rem; margin-bottom: 1rem; padding: 5px; border-radius: 4px;">
+            </div>
+            <div id="messagesContainer">
+                <!-- Messages will appear here -->
+            </div>
+            <button class="close-btn" onclick="document.getElementById('chatHistory').style.display='none'">Close
+                Chat</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001/whatsapp';
+
+        async function fetchContacts() {
+            try {
+                const response = await fetch(`${API_URL}/contacts`);
+                const contacts = await response.json();
+                const list = document.getElementById('contactList');
+                list.innerHTML = '';
+
+                contacts.forEach(contact => {
+                    const li = document.createElement('li');
+                    li.className = 'contact-item';
+                    li.innerHTML = `
+                        <div class="contact-info">
+                            <span class="contact-name">${contact.name}</span>
+                            <span class="contact-phone">${contact.phone}</span>
+                        </div>
+                        <button class="send-btn" onclick="sendMessage('${contact.phone}')">Send</button>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching contacts:', error);
+                document.getElementById('status').innerText = 'Failed to fetch contacts.';
+                document.getElementById('status').style.color = 'red';
+            }
+        }
+
+        async function sendMessage(to) {
+            const message = prompt("Enter message to send:", "Hello!");
+            if (!message) return;
+
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = 'Sending message...';
+            statusDiv.style.color = 'blue';
+
+            try {
+                const response = await fetch(`${API_URL}/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        to: to,
+                        templateName: 'custom_message',
+                        languageCode: 'en',
+                        message: message
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerText = 'Message sent successfully!';
+                    statusDiv.style.color = 'green';
+                    fetchConversations();
+
+                    // If chat is open for this user, refresh it
+                    const currentChatPhone = document.getElementById('chatWith').innerText;
+                    if (document.getElementById('chatHistory').style.display !== 'none' && currentChatPhone === to) {
+                        loadChatHistory(to);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to send message');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                statusDiv.innerText = `Error: ${error.message}`;
+                statusDiv.style.color = 'red';
+            }
+        }
+
+        async function fetchConversations() {
+            try {
+                const response = await fetch(`${API_URL}/conversations`);
+                const conversations = await response.json();
+                const list = document.getElementById('conversationList');
+                list.innerHTML = '';
+
+                conversations.forEach(conv => {
+                    const li = document.createElement('li');
+                    li.className = 'contact-item clickable';
+                    li.onclick = () => loadChatHistory(conv.participant.phone);
+
+                    const lastText = conv.lastMessage?.text || 'No messages';
+                    const lastTime = conv.lastMessage ? new Date(conv.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                    li.innerHTML = `
+                        <div class="contact-info">
+                            <span class="contact-name">${conv.participant.name}</span>
+                            <span class="contact-phone">${conv.participant.phone}</span>
+                            <span class="contact-phone">Last: ${lastText.substring(0, 30)}${lastText.length > 30 ? '...' : ''}</span>
+                            <span style="font-size: 0.7rem; color: #999;">${lastTime}</span>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching conversations:', error);
+            }
+        }
+
+        async function loadChatHistory(phone, before = null) {
+            const historyDiv = document.getElementById('chatHistory');
+            historyDiv.style.display = 'block';
+            document.getElementById('chatWith').innerText = phone;
+            const container = document.getElementById('messagesContainer');
+
+            if (!before) container.innerHTML = 'Loading...';
+
+            try {
+                // Fetch session status only on initial load
+                if (!before) {
+                    fetch(`${API_URL}/session-status/${phone}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const infoDiv = document.getElementById('sessionInfo');
+                            if (data.is_open) {
+                                const expires = new Date(data.expires_at).toLocaleTimeString();
+                                infoDiv.style.backgroundColor = '#dcf8c6';
+                                infoDiv.innerHTML = `✅ Session Open (Expires: ${expires})`;
+                            } else {
+                                infoDiv.style.backgroundColor = '#f8d7da';
+                                infoDiv.innerHTML = `⚠️ Session Closed (Template will be sent)`;
+                            }
+                        });
+                }
+
+                const url = before ? `${API_URL}/messages/${phone}?before=${before}` : `${API_URL}/messages/${phone}`;
+                const response = await fetch(url);
+                const messages = await response.json();
+
+                if (!before) container.innerHTML = '';
+
+                if (messages.length === 0 && !before) {
+                    container.innerHTML = '<p style="text-align:center; color:#666;">No messages yet</p>';
+                    return;
+                }
+
+                // Add Load More button if we have messages and it's the first load
+                if (!before && messages.length >= 20) {
+                    const loadMoreBtn = document.createElement('button');
+                    loadMoreBtn.id = 'loadMoreBtn';
+                    loadMoreBtn.innerText = 'Load older messages';
+                    loadMoreBtn.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 5px; cursor: pointer;';
+                    loadMoreBtn.onclick = () => {
+                        const oldestMsg = messages[messages.length - 1];
+                        loadChatHistory(phone, oldestMsg.created_at);
+                        loadMoreBtn.remove();
+                    };
+                    container.prepend(loadMoreBtn);
+                }
+
+                // Append messages
+                messages.reverse().forEach(msg => {
+                    const div = document.createElement('div');
+                    const isIncoming = msg.direction === 'inbound';
+                    div.className = 'message-bubble ' + (isIncoming ? 'message-from-user' : 'message-from-system');
+
+                    let contentHtml = '';
+                    if (msg.type === 'image') {
+                        const mediaId = msg.media_id;
+                        const proxyUrl = mediaId ? `${API_URL}/media/${mediaId}` : msg.media_url;
+                        contentHtml = `
+                            <div class="message-image">
+                                <img src="${proxyUrl}" alt="Media" style="max-width: 100%; border-radius: 8px; cursor: pointer;" 
+                                     onclick="window.open(this.src)" 
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<p>[Image failed to load]</p>';">
+                            </div>
+                            <div style="margin-top: 5px;">${msg.content?.text || ''}</div>
+                        `;
+                    } else {
+                        const text = msg.content?.text || (msg.type !== 'text' ? `[${msg.type}]` : 'Media Message');
+                        contentHtml = `<div>${text}</div>`;
+                    }
+
+                    const dateObj = new Date(msg.created_at);
+                    const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+                    div.innerHTML = `
+                        ${contentHtml}
+                        <div class="message-time">
+                            ${dateStr} ${timeStr}
+                        </div>
+                    `;
+
+                    if (before) {
+                        // If loading more, insert after the load more button
+                        const btn = document.getElementById('loadMoreBtn');
+                        if (btn) btn.after(div);
+                        else container.prepend(div);
+                    } else {
+                        container.appendChild(div);
+                    }
+                });
+
+                if (!before) container.scrollTop = container.scrollHeight;
+
+            } catch (error) {
+                console.error('Error loading history:', error);
+                if (!before) container.innerHTML = 'Error loading messages';
+            }
+        }
+
+        // Initialize
+        fetchContacts();
+        fetchConversations();
+        setInterval(fetchConversations, 2 * 60 * 1000);
+
+        // Real-time updates with Socket.io
+        const socket = io('http://localhost:5001');
+
+        socket.on('connect', () => {
+            console.log('Connected to Socket.io server');
+        });
+
+        socket.on('new_whatsapp_message', (data) => {
+            console.log('New message received:', data);
+
+            fetchConversations();
+
+            // If viewing this chat, reload history
+            const currentChatPhone = document.getElementById('chatWith').innerText;
+            if (document.getElementById('chatHistory').style.display !== 'none' &&
+                data.participant.phone === currentChatPhone) {
+                loadChatHistory(currentChatPhone);
+            }
+
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = `New message from ${data.participant.name}!`;
+            statusDiv.style.color = 'blue';
+            setTimeout(() => {
+                statusDiv.innerText = '';
+            }, 5000);
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+[
+    {
+        "id": "conv_1",
+        "participant": {
+            "name": "John Doe",
+            "phone": "1234567890",
+            "avatar": "https://ui-avatars.com/api/?name=John+Doe"
+        },
+        "lastMessage": {
+            "text": "Hello, is this available?",
+            "timestamp": "2024-01-24T10:00:00Z",
+            "isFromUser": false
+        },
+        "unreadCount": 2
+    },
+    {
+        "id": "conv_2",
+        "participant": {
+            "name": "Jane Smith",
+            "phone": "0987654321",
+            "avatar": "https://ui-avatars.com/api/?name=Jane+Smith"
+        },
+        "lastMessage": {
+            "text": "Thank you for the update!",
+            "timestamp": "2024-01-23T15:30:00Z",
+            "isFromUser": true
+        },
+        "unreadCount": 0
+    }
+]
