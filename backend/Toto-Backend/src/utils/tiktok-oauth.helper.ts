@@ -16,7 +16,7 @@ export class TikTokOAuthHelper {
     const scope = 'user.info.basic,user.info.profile'; // Approved scopes
     const state = Buffer.from(JSON.stringify({ timestamp: Date.now() })).toString('base64');
 
-    const authUrl = new URL('https://www.tiktok.com/v2/oauth/authorize/');
+    const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize/');
     authUrl.searchParams.append('client_key', clientId);
     authUrl.searchParams.append('scope', scope);
     authUrl.searchParams.append('response_type', 'code');
