@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronLeft, MessageSquare, Zap, UserCheck, Send, CheckCheck, Check, X, Box, Mic, Square, CreditCard, Sparkles, RefreshCw, Play, UserPlus, Info, Phone, MoreVertical, Circle, Power, Heart, Image as ImageIcon, FolderOpen, Grid, Loader2, Filter, Reply, LayoutGrid, ShieldCheck, User, Globe } from 'lucide-react';
+import { ChevronLeft, MessageSquare, Zap, UserCheck, Send, CheckCheck, Check, X, Box, Mic, Square, CreditCard, Sparkles, RefreshCw, Play, UserPlus, Info, Phone, MoreVertical, Circle, Power, Heart, Image as ImageIcon, FolderOpen, Grid, Loader2, Filter, Reply, LayoutGrid, ShieldCheck, User, Globe, Clock, Bell } from 'lucide-react';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
 import { useApp, SafeText } from '../App';
 import { Platform, Product } from '../types';
 import { gemini } from '../services/gemini';
+import { api } from '../services/api';
 
 const Inbox: React.FC = () => {
   const { searchQuery, conversations, staff, sendMessage, products, assignStaff, generateInvoice, markAsOpened, toggleAi, aiSettings } = useApp();
@@ -15,6 +16,10 @@ const Inbox: React.FC = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceAmount, setInvoiceAmount] = useState('0');
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [showFollowupModal, setShowFollowupModal] = useState(false);
+  const [followupMessage, setFollowupMessage] = useState('');
+  const [followupDelay, setFollowupDelay] = useState(60);
+  const [followupSending, setFollowupSending] = useState(false);
   
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -100,6 +105,29 @@ const Inbox: React.FC = () => {
       setAiSuggestion(suggestion);
     }
     setIsAiLoading(false);
+  };
+
+  const handleScheduleFollowup = async () => {
+    if (!followupMessage.trim() || !activeChat) return;
+    const session = api.getStoredSession();
+    if (!session?.token) return;
+    setFollowupSending(true);
+    try {
+      await api.scheduleFollowUp(session.token, {
+        conversationId: activeChat.id,
+        platform: activeChat.platform,
+        contactId: activeChat.customerPhone,
+        message: followupMessage,
+        delayMinutes: followupDelay,
+      });
+      setShowFollowupModal(false);
+      setFollowupMessage('');
+      setFollowupDelay(60);
+    } catch (err: any) {
+      alert(err.message || 'Failed to schedule follow-up');
+    } finally {
+      setFollowupSending(false);
+    }
   };
 
   return (
@@ -214,6 +242,7 @@ const Inbox: React.FC = () => {
                  </button>
                  <button onClick={() => setShowInvoiceModal(true)} className="p-2 text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all" title="Deploy Settlement Node"><CreditCard size={20}/></button>
                  <button onClick={() => setShowStaffPicker(true)} className="p-2 text-slate-500 hover:text-brand hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all" title="Delegate Node Access"><UserPlus size={20}/></button>
+                 <button onClick={() => setShowFollowupModal(true)} className="p-2 text-slate-500 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all" title="Schedule Follow-up"><Bell size={20}/></button>
               </div>
             </div>
             
@@ -374,6 +403,57 @@ const Inbox: React.FC = () => {
                 <input type="number" value={invoiceAmount} onChange={(e)=>setInvoiceAmount(e.target.value)} className="w-full bg-transparent text-5xl font-black font-outfit outline-none focus:text-brand" autoFocus />
              </div>
              <button onClick={() => {generateInvoice(selectedId!, parseFloat(invoiceAmount)); setShowInvoiceModal(false);}} className="w-full py-6 bg-brand text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-brand/30 hover:scale-105 active:scale-95 transition-all">Issue Settlement</button>
+          </div>
+        </div>
+      )}
+
+      {showFollowupModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[3rem] p-12 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in duration-300">
+            <div className="flex items-center justify-between mb-8 text-left">
+              <div>
+                <h3 className="text-2xl font-bold font-outfit uppercase tracking-tighter leading-none">Schedule Follow-up</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Auto-message for {activeChat?.customerName}</p>
+              </div>
+              <button onClick={() => setShowFollowupModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"><X size={24}/></button>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Follow-up Message</label>
+                <textarea
+                  value={followupMessage}
+                  onChange={(e) => setFollowupMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Hi! Just checking in — are you still interested?"
+                  className="w-full p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-amber-400 font-medium text-sm resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                  Delay: {followupDelay >= 60 ? `${Math.round(followupDelay / 60)}h` : `${followupDelay}m`} from now
+                </label>
+                <input
+                  type="range" min={15} max={1440} step={15}
+                  value={followupDelay}
+                  onChange={(e) => setFollowupDelay(Number(e.target.value))}
+                  className="w-full accent-amber-500"
+                />
+                <div className="flex justify-between text-[9px] font-black text-slate-400 mt-1 uppercase">
+                  <span>15m</span><span>6h</span><span>12h</span><span>24h</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowFollowupModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-500">Cancel</button>
+                <button
+                  onClick={handleScheduleFollowup}
+                  disabled={followupSending || !followupMessage.trim()}
+                  className="flex-1 py-4 bg-amber-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {followupSending ? <RefreshCw size={14} className="animate-spin" /> : <Clock size={14} />}
+                  {followupSending ? 'Scheduling...' : 'Schedule'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

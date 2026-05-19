@@ -403,4 +403,32 @@ export const api = {
   async deleteUser(token: string, id: string): Promise<void> {
     await request(`/users/${id}`, { method: 'DELETE' }, token);
   },
+
+  // --- Generic HTTP helpers (used by FollowupSettings, etc.) ---
+  async get(path: string, token?: string): Promise<{ data: any }> {
+    const session = this.getStoredSession();
+    const tok = token || session?.token || '';
+    const result = await request<any>(path, { method: 'GET' }, tok);
+    return { data: result };
+  },
+
+  async post(path: string, body: Record<string, unknown>, token?: string): Promise<{ data: any }> {
+    const session = this.getStoredSession();
+    const tok = token || session?.token || '';
+    const result = await request<any>(path, { method: 'POST', body: JSON.stringify(body) }, tok);
+    return { data: result };
+  },
+
+  async patch(path: string, body: Record<string, unknown>, token?: string): Promise<{ data: any }> {
+    const session = this.getStoredSession();
+    const tok = token || session?.token || '';
+    const result = await request<any>(path, { method: 'PATCH', body: JSON.stringify(body) }, tok);
+    return { data: result };
+  },
+
+  async delete(path: string, token?: string): Promise<void> {
+    const session = this.getStoredSession();
+    const tok = token || session?.token || '';
+    await request<any>(path, { method: 'DELETE' }, tok);
+  },
 };
