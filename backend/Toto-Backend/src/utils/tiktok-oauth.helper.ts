@@ -13,7 +13,7 @@ export class TikTokOAuthHelper {
   static generateAuthorizationUrl(): string {
     const clientId = process.env.TIKTOK_CLIENT_ID || '';
     const redirectUri = process.env.TIKTOK_REDIRECT_URI || 'http://localhost:5001/tiktok/callback';
-    const scope = 'user.info.basic,chat.write'; // Scopes needed for messaging
+    const scope = 'user.info.basic,user.info.profile'; // Approved scopes
     const state = Buffer.from(JSON.stringify({ timestamp: Date.now() })).toString('base64');
 
     const authUrl = new URL('https://www.tiktok.com/v2/oauth/authorize/');
