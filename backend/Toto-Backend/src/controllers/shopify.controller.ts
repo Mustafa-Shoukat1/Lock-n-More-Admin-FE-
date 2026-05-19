@@ -52,3 +52,12 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
         next(error);
     }
 };
+
+export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const orders = await shopifyService.getOrders();
+        res.status(200).json({ status: 'ok', data: orders });
+    } catch (error) {
+        next(error);
+    }
+};

@@ -372,14 +372,14 @@ export const api = {
   // --- AI Settings ---
   async fetchAiSettings(token: string): Promise<any[]> {
     try {
-      return await request<any[]>('/aisettings', { method: 'GET' }, token);
+      return await request<any[]>('/ai-settings', { method: 'GET' }, token);
     } catch {
       return [];
     }
   },
 
   async updateAiSettings(token: string, id: string, updates: Record<string, unknown>): Promise<any> {
-    return request(`/aisettings/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }, token);
+    return request(`/ai-settings/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }, token);
   },
 
   // --- Agent Performance ---

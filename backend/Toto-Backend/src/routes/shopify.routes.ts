@@ -69,4 +69,6 @@ router.post('/products', authMiddleware, requireRole('admin', 'super_admin'), Sh
  */
 router.get('/products', authMiddleware, requireRole('admin', 'super_admin'), ShopifyController.getProducts);
 
+router.get('/orders', authMiddleware, requireRole('admin', 'super_admin'), ShopifyController.getOrders);
+
 export const shopifyRoutes = router;

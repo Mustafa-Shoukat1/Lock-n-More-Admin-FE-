@@ -280,4 +280,22 @@ export class ShopifyService {
             throw new Error(`Failed to sync order to Shopify: ${error.message}`);
         }
     }
+
+    /**
+     * Fetches recent orders from Shopify API.
+     */
+    async getOrders(limit: number = 50) {
+        try {
+            const restClient = this.client.getClient();
+            const response = await restClient.get({
+                path: 'orders',
+                query: { limit, status: 'any' } as any,
+            });
+            logger.info(`Fetched ${(response.body.orders as any[]).length} orders from Shopify`);
+            return (response.body.orders as any[]) || [];
+        } catch (error: any) {
+            logger.error('Error fetching Shopify orders:', error.message);
+            throw new Error(`Failed to fetch orders from Shopify: ${error.message}`);
+        }
+    }
 }
