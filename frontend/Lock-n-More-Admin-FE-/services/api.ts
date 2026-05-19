@@ -320,4 +320,87 @@ export const api = {
       token
     );
   },
+
+  // --- Orders ---
+  async fetchOrders(token: string): Promise<any[]> {
+    try {
+      const result = await request<{ status: string; data: any[] }>(
+        '/shopify/orders',
+        { method: 'GET' },
+        token
+      );
+      return result.data || [];
+    } catch {
+      return [];
+    }
+  },
+
+  // --- Notifications ---
+  async fetchNotifications(token: string): Promise<any[]> {
+    try {
+      return await request<any[]>('/notifications', { method: 'GET' }, token);
+    } catch {
+      return [];
+    }
+  },
+
+  async markNotificationRead(token: string, id: string): Promise<void> {
+    await request(`/notifications/${id}/read`, { method: 'PUT' }, token);
+  },
+
+  async markAllNotificationsRead(token: string): Promise<void> {
+    await request('/notifications/read-all', { method: 'PUT' }, token);
+  },
+
+  // --- Follow-ups ---
+  async fetchFollowUps(token: string): Promise<any[]> {
+    try {
+      return await request<any[]>('/followup/all', { method: 'GET' }, token);
+    } catch {
+      return [];
+    }
+  },
+
+  async scheduleFollowUp(token: string, data: { conversationId: string; platform: string; contactId: string; message: string; delayMinutes: number }): Promise<any> {
+    return request('/followup/schedule', { method: 'POST', body: JSON.stringify(data) }, token);
+  },
+
+  async cancelFollowUp(token: string, id: string): Promise<void> {
+    await request(`/followup/${id}`, { method: 'DELETE' }, token);
+  },
+
+  // --- AI Settings ---
+  async fetchAiSettings(token: string): Promise<any[]> {
+    try {
+      return await request<any[]>('/aisettings', { method: 'GET' }, token);
+    } catch {
+      return [];
+    }
+  },
+
+  async updateAiSettings(token: string, id: string, updates: Record<string, unknown>): Promise<any> {
+    return request(`/aisettings/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }, token);
+  },
+
+  // --- Agent Performance ---
+  async fetchAgentPerformance(token: string): Promise<any[]> {
+    try {
+      return await request<any[]>('/performance/agents', { method: 'GET' }, token);
+    } catch {
+      return [];
+    }
+  },
+
+  // --- User Management ---
+  async createUser(token: string, userData: { name: string; email: string; password: string; role: string }): Promise<any> {
+    return request('/users', { method: 'POST', body: JSON.stringify(userData) }, token);
+  },
+
+  async updateUser(token: string, id: string, updates: Record<string, unknown>): Promise<any> {
+    return request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(updates) }, token);
+  },
+
+  async deleteUser(token: string, id: string): Promise<void> {
+    await request(`/users/${id}`, { method: 'DELETE' }, token);
+  },
 };

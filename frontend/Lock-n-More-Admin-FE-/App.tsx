@@ -21,6 +21,7 @@ import { translations } from './i18n';
 import { db } from './services/db';
 import { gemini } from './services/gemini';
 import { api } from './services/api';
+import { socketService } from './services/socket';
 
 const SOUNDS = {
   message: 'https://cdn.pixabay.com/audio/2022/03/15/audio_73130c2c3e.mp3',
@@ -246,10 +247,11 @@ const App: React.FC = () => {
       if (!isLoggedIn || !currentSession?.token || !activeUser) return;
 
       try {
-        const [users, conversations, products] = await Promise.all([
+        const [users, conversations, products, orders] = await Promise.all([
           api.fetchUsers(currentSession.token),
           api.fetchInboxSnapshot(currentSession.token, activeUser),
           api.fetchProducts(currentSession.token),
+          api.fetchOrders(currentSession.token),
         ]);
 
         setData(prev => {
@@ -258,6 +260,14 @@ const App: React.FC = () => {
             staff: users.length > 0 ? users : prev.staff,
             conversations,
             products: products.length > 0 ? products : prev.products,
+            orders: orders.length > 0 ? orders.map((o: any) => ({
+              id: String(o.id || o.order_id || o.name),
+              customer: o.customer?.first_name ? `${o.customer.first_name} ${o.customer.last_name || ''}`.trim() : (o.customer_name || o.email || 'Unknown'),
+              amount: Number(o.total_price || o.amount || 0),
+              status: (o.financial_status || o.status || 'pending').toLowerCase(),
+              platform: o.source_name || o.platform || 'shopify',
+              date: o.created_at ? new Date(o.created_at).toLocaleDateString() : 'N/A',
+            })) : prev.orders,
           };
           db.save(next);
           return next;
@@ -270,6 +280,64 @@ const App: React.FC = () => {
     };
 
     hydrateFromBackend();
+  }, [isLoggedIn, activeUser?.id]);
+
+  // Socket.IO real-time message listener
+  useEffect(() => {
+    if (!isLoggedIn) {
+      socketService.disconnect();
+      return;
+    }
+
+    socketService.connect();
+
+    const handleWhatsAppMessage = (payload: any) => {
+      addLog('info', `Real-time WhatsApp message from ${payload?.participant?.name || 'unknown'}`);
+      playNotificationSound('message');
+      // Re-fetch conversations to pick up the new message
+      const session = api.getStoredSession();
+      if (session?.token && activeUser) {
+        api.fetchInboxSnapshot(session.token, activeUser).then(conversations => {
+          setData(prev => {
+            const next = { ...prev, conversations };
+            db.save(next);
+            return next;
+          });
+        }).catch(() => {});
+      }
+    };
+
+    const handleInstagramMessage = (payload: any) => {
+      addLog('info', `Real-time Instagram message from ${payload?.participant?.name || 'unknown'}`);
+      playNotificationSound('message');
+      const session = api.getStoredSession();
+      if (session?.token && activeUser) {
+        api.fetchInboxSnapshot(session.token, activeUser).then(conversations => {
+          setData(prev => {
+            const next = { ...prev, conversations };
+            db.save(next);
+            return next;
+          });
+        }).catch(() => {});
+      }
+    };
+
+    const handleNotification = (payload: any) => {
+      addLog('info', `Notification: ${payload?.title || 'New notification'}`);
+      playNotificationSound('system');
+      setNotifications(prev => [payload, ...prev]);
+    };
+
+    socketService.on('new_whatsapp_message', handleWhatsAppMessage);
+    socketService.on('new_instagram_message', handleInstagramMessage);
+    socketService.on('new_notification', handleNotification);
+
+    return () => {
+      socketService.off('new_whatsapp_message');
+      socketService.off('new_instagram_message');
+      socketService.off('new_notification');
+      socketService.disconnect();
+    };
   }, [isLoggedIn, activeUser?.id]);
 
   useEffect(() => {

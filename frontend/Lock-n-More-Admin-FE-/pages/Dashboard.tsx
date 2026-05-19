@@ -20,15 +20,28 @@ const Dashboard: React.FC = () => {
   const activeSignals = conversations.length;
   const outOfStockCount = products.filter(p => p.stock === 0).length;
 
-  const salesData = useMemo(() => [
-    { name: 'Mon', sales: 4200 },
-    { name: 'Tue', sales: 3100 },
-    { name: 'Wed', sales: 5800 },
-    { name: 'Thu', sales: 4780 },
-    { name: 'Fri', sales: 7890 },
-    { name: 'Sat', sales: 9390 },
-    { name: 'Today', sales: totalRevenue },
-  ], [totalRevenue]);
+  const salesData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const now = new Date();
+    const buckets: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const label = i === 0 ? 'Today' : days[d.getDay()];
+      buckets[label] = 0;
+    }
+    orders.forEach(o => {
+      if (!o.date || o.date === 'N/A') return;
+      const d = new Date(o.date);
+      if (isNaN(d.getTime())) return;
+      const diff = Math.floor((now.getTime() - d.getTime()) / 86400000);
+      if (diff >= 0 && diff < 7) {
+        const label = diff === 0 ? 'Today' : days[d.getDay()];
+        if (label in buckets) buckets[label] += Number(o.amount) || 0;
+      }
+    });
+    return Object.entries(buckets).map(([name, sales]) => ({ name, sales }));
+  }, [orders]);
 
   const handleAudit = () => {
     setIsAuditRunning(true);

@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrainCircuit, Save, RotateCcw, Zap, Target, Heart, ShieldCheck, AlignLeft, RefreshCw, ChevronRight, Sparkles, Info, MessageCircle, BarChart2, ShieldAlert, Cpu, Layers, Fingerprint, SearchCheck, Activity, Globe, Database, Terminal } from 'lucide-react';
 import { useApp, SafeText } from '../App';
 import { gemini } from '../services/gemini';
+import { api } from '../services/api';
 import FollowupSettings from '../components/FollowupSettings';
 
 const AIManager: React.FC = () => {
@@ -20,16 +21,52 @@ const AIManager: React.FC = () => {
     { id: 'detective', label: 'Inspector', icon: <Fingerprint size={22}/>, desc: 'Analytical, probing questions to qualify leads deeply.' },
   ];
 
-  const handleSave = () => {
-    setNotifications(prev => [{ 
-      id: Date.now(), 
-      title: 'Cognitive Sync Successful', 
-      message: `TOTO Perimeter updated: ${aiSettings.personality.toUpperCase()} personality active.`, 
-      type: 'system', 
-      time: 'Just now', 
-      read: false 
-    }, ...prev]);
-    alert("TOTO Cognitive Core Synchronized.");
+  const [isSaving, setIsSaving] = useState(false);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const session = api.getStoredSession();
+    if (!session?.token) return;
+    api.fetchAiSettings(session.token).then((res: any) => {
+      if (res && res.length > 0) {
+        const s = res[0];
+        setSettingsId(s.id);
+        setAiSettings({
+          ...aiSettings,
+          personality: s.personality || aiSettings.personality,
+          tone: s.tone || aiSettings.tone,
+          responseLength: s.response_length ?? aiSettings.responseLength,
+          creativity: s.creativity ?? aiSettings.creativity,
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const session = api.getStoredSession();
+      if (session?.token && settingsId) {
+        await api.updateAiSettings(session.token, settingsId, {
+          personality: aiSettings.personality,
+          tone: aiSettings.tone,
+          response_length: aiSettings.responseLength,
+          creativity: aiSettings.creativity,
+        });
+      }
+      setNotifications(prev => [{ 
+        id: Date.now(), 
+        title: 'Cognitive Sync Successful', 
+        message: `TOTO Perimeter updated: ${aiSettings.personality.toUpperCase()} personality active.`, 
+        type: 'system', 
+        time: 'Just now', 
+        read: false 
+      }, ...prev]);
+    } catch {
+      alert('Failed to save AI settings to backend.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const runTest = async () => {
@@ -63,8 +100,8 @@ const AIManager: React.FC = () => {
           <p className="text-slate-400 max-w-xl font-medium text-lg leading-relaxed text-left">Calibrate linguistic reasoning archetypes and behavior matrices for automated sales signals across WhatsApp, IG, and TikTok.</p>
         </div>
         <div className="flex gap-4 relative z-10 w-full md:w-auto">
-          <button onClick={handleSave} className="flex-1 px-12 py-5 bg-brand text-white text-[11px] font-black uppercase tracking-widest rounded-[2rem] flex items-center justify-center gap-4 shadow-2xl shadow-brand/40 hover:scale-105 active:scale-95 transition-all">
-            <Save size={20} /> Deploy Intelligence
+          <button onClick={handleSave} disabled={isSaving} className="flex-1 px-12 py-5 bg-brand text-white text-[11px] font-black uppercase tracking-widest rounded-[2rem] flex items-center justify-center gap-4 shadow-2xl shadow-brand/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
+            {isSaving ? <RefreshCw size={20} className="animate-spin" /> : <Save size={20} />} {isSaving ? 'Deploying...' : 'Deploy Intelligence'}
           </button>
         </div>
       </div>

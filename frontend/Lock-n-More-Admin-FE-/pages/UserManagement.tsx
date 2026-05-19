@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UserPlus, Shield, Activity, MoreVertical, Mail, Laptop, Smartphone, Lock, X, CheckCircle2, MailPlus, ShieldCheck } from 'lucide-react';
+import { UserPlus, Shield, Activity, MoreVertical, Mail, Laptop, Smartphone, Lock, X, CheckCircle2, MailPlus, ShieldCheck, Trash2 } from 'lucide-react';
 import { useApp } from '../App';
+import { api } from '../services/api';
 
 const UserManagement: React.FC = () => {
   const { staff, setStaff } = useApp();
@@ -8,22 +9,46 @@ const UserManagement: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState('agent');
+  const [invitePassword, setInvitePassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInvite = () => {
-    if (!inviteName || !inviteEmail) return;
-    const newStaff = {
-      id: `staff${staff.length + 1}`,
-      name: inviteName,
-      email: inviteEmail,
-      role: inviteRole as any,
-      active: true,
-      lastLogin: 'Never',
-      avatar: `https://i.pravatar.cc/150?u=${inviteName}`
-    };
-    setStaff([...staff, newStaff]);
-    setShowInviteModal(false);
-    setInviteName('');
-    setInviteEmail('');
+  const handleInvite = async () => {
+    if (!inviteName || !inviteEmail || !invitePassword) return;
+    const session = api.getStoredSession();
+    if (!session?.token) return;
+
+    setIsSubmitting(true);
+    try {
+      await api.createUser(session.token, {
+        name: inviteName,
+        email: inviteEmail,
+        password: invitePassword,
+        role: inviteRole,
+      });
+      const users = await api.fetchUsers(session.token);
+      setStaff(users);
+      setShowInviteModal(false);
+      setInviteName('');
+      setInviteEmail('');
+      setInvitePassword('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to create user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (!confirm('Remove this user from the system?')) return;
+    const session = api.getStoredSession();
+    if (!session?.token) return;
+    try {
+      await api.deleteUser(session.token, userId);
+      const users = await api.fetchUsers(session.token);
+      setStaff(users);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete user');
+    }
   };
 
   return (
@@ -51,7 +76,7 @@ const UserManagement: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {staff.map((s) => (
-          <UserCard key={s.id} name={s.name} role={s.role} email={s.email} active={s.active} lastLogin={s.lastLogin} avatar={s.avatar} />
+          <UserCard key={s.id} id={s.id} name={s.name} role={s.role} email={s.email} active={s.active} lastLogin={s.lastLogin} avatar={s.avatar} onDelete={handleDelete} />
         ))}
       </div>
 
@@ -73,6 +98,11 @@ const UserManagement: React.FC = () => {
                   placeholder="Email"
                   className="w-full p-4 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold"
                 />
+                <input 
+                  type="password" value={invitePassword} onChange={(e) => setInvitePassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full p-4 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold"
+                />
                 <select 
                   value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full p-4 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold"
@@ -83,8 +113,8 @@ const UserManagement: React.FC = () => {
                 <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
                   <p className="text-[10px] text-slate-400 font-bold">New users must sign the electronic NDA before their first login node access is granted.</p>
                 </div>
-                <button onClick={handleInvite} className="w-full py-5 bg-brand text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3">
-                  <MailPlus size={20} /> Send magic link
+                <button onClick={handleInvite} disabled={isSubmitting} className="w-full py-5 bg-brand text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50">
+                  <MailPlus size={20} /> {isSubmitting ? 'Creating...' : 'Create User'}
                 </button>
              </div>
           </div>
@@ -94,12 +124,12 @@ const UserManagement: React.FC = () => {
   );
 };
 
-const UserCard = ({ name, role, email, active, lastLogin, avatar }: any) => (
+const UserCard = ({ id, name, role, email, active, lastLogin, avatar, onDelete }: any) => (
   <div className="bg-surface p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 relative shadow-sm">
     <div className={`absolute top-6 right-6 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 ${active ? 'bg-emerald-500 shadow-md' : 'bg-slate-300'}`}></div>
     <div className="flex items-start justify-between mb-6">
       <img src={avatar} className="w-16 h-16 rounded-2xl object-cover shadow-inner" />
-      <button className="p-2 text-slate-400"><MoreVertical size={20} /></button>
+      <button onClick={() => onDelete(id)} className="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Remove user"><Trash2 size={18} /></button>
     </div>
     <h3 className="text-xl font-bold text-slate-900 dark:text-white font-outfit tracking-tight">{name}</h3>
     <p className="text-[10px] font-black text-brand uppercase tracking-widest mt-2 flex items-center gap-2"><Shield size={10} /> {role}</p>

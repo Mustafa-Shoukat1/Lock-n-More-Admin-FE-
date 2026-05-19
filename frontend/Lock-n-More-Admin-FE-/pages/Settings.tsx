@@ -4,6 +4,7 @@ import { UserCircle, Users, Layers, Lock, ShieldCheck, Camera, Volume2, Save, Tr
 import { useApp } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from '../components/Icons';
+import { api } from '../services/api';
 
 const Settings: React.FC = () => {
   const { activeUser, setActiveUser, staff, setStaff, playNotificationSound, resetDatabase, integrationSettings, setIntegrationSettings, addLog } = useApp();
@@ -21,10 +22,16 @@ const Settings: React.FC = () => {
 
   // Debounced auto-save for profile
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (editName !== activeUser?.name || editEmail !== activeUser?.email) {
         setIsSaving(true);
         setActiveUser({ ...activeUser!, name: editName, email: editEmail });
+        const session = api.getStoredSession();
+        if (session?.token && activeUser?.id) {
+          try {
+            await api.updateUser(session.token, activeUser.id, { name: editName, email: editEmail });
+          } catch {}
+        }
         addLog('info', 'Identity Hub synchronized via auto-save.');
         setTimeout(() => setIsSaving(false), 800);
       }
@@ -32,32 +39,46 @@ const Settings: React.FC = () => {
     return () => clearTimeout(timer);
   }, [editName, editEmail, activeUser, setActiveUser, addLog]);
 
-  const handleInvite = () => {
+  const handleInvite = async () => {
     if (!inviteName || !inviteEmail) return;
-    const newStaff = {
-      id: `staff-${Date.now()}`,
-      name: inviteName,
-      email: inviteEmail,
-      role: inviteRole as any,
-      active: true,
-      lastLogin: 'Never',
-      avatar: `https://i.pravatar.cc/150?u=${inviteName}`
-    };
-    setStaff([...staff, newStaff]);
+    const session = api.getStoredSession();
+    if (session?.token) {
+      try {
+        await api.createUser(session.token, {
+          name: inviteName,
+          email: inviteEmail,
+          password: 'changeme123',
+          role: inviteRole,
+        });
+        const users = await api.fetchUsers(session.token);
+        setStaff(users);
+      } catch (err: any) {
+        alert(err.message || 'Failed to create user');
+      }
+    }
     setShowInviteModal(false);
     setInviteName('');
     setInviteEmail('');
     addLog('success', `New Node Authorization sent to ${inviteEmail}.`);
   };
 
-  const deleteStaffNode = (id: string) => {
+  const deleteStaffNode = async (id: string) => {
     const target = staff.find(s => s.id === id);
     if (target?.role === 'super_admin') {
       alert("Unauthorized: Primary Super Admin node cannot be decommissioned.");
       return;
     }
     if (window.confirm("Authorize permanent node decommissioning?")) {
-      setStaff(staff.filter(s => s.id !== id));
+      const session = api.getStoredSession();
+      if (session?.token) {
+        try {
+          await api.deleteUser(session.token, id);
+          const users = await api.fetchUsers(session.token);
+          setStaff(users);
+        } catch (err: any) {
+          alert(err.message || 'Failed to delete user');
+        }
+      }
       addLog('warning', `Perimeter node ${target?.name} decommissioned.`);
     }
   };

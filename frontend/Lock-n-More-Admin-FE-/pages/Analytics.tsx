@@ -156,7 +156,19 @@ const Analytics: React.FC = () => {
                </div>
                <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[{n:'Mon',v:4200},{n:'Tue',v:3800},{n:'Wed',v:9200},{n:'Thu',v:6100},{n:'Fri',v:10500},{n:'Sat',v:8900},{n:'Sun',v:14500}]}>
+                    <AreaChart data={(() => {
+                       const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+                       const now = new Date();
+                       return Array.from({length:7}, (_,i) => {
+                         const d = new Date(now); d.setDate(d.getDate() - (6 - i));
+                         const dayOrders = orders.filter(o => {
+                           if (!o.date || o.date === 'N/A') return false;
+                           const od = new Date(o.date);
+                           return od.toDateString() === d.toDateString();
+                         });
+                         return { n: days[d.getDay()], v: dayOrders.reduce((a,b) => a + (Number(b.amount) || 0), 0) };
+                       });
+                    })()}>
                        <defs><linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2563EB" stopOpacity={0.2}/><stop offset="95%" stopColor="#2563EB" stopOpacity={0}/></linearGradient></defs>
                        <XAxis dataKey="n" hide /><YAxis hide /><Tooltip cursor={{stroke: '#2563EB', strokeWidth: 2}} /><Area type="monotone" dataKey="v" stroke="#2563EB" fillOpacity={1} fill="url(#colorSales)" strokeWidth={4} />
                     </AreaChart>
