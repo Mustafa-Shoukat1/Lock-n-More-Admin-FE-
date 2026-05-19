@@ -4,7 +4,7 @@ import { TikTokService } from '../services/tiktok.service';
 
 export class TikTokController {
   private adapter: TikTokAdapter;
-  private service: TikTokService;
+  public service: TikTokService;
 
   constructor() {
     this.adapter = new TikTokAdapter();

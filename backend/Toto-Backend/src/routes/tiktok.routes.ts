@@ -68,9 +68,9 @@ router.get('/debug/auth-url', (req, res) => {
       instructions: [
         '1. Click the authUrl link above',
         '2. Log into TikTok and authorize the app',
-        '3. You will be redirected to /tiktok/callback with an authorization code',
-        '4. The access token will be displayed in the console',
-        '5. Copy the access token and add it to .env.local as TIKTOK_ACCESS_TOKEN'
+        '3. After authorization, TikTok redirects to toto.locksnmore.com.my with ?code=XXXX in the URL',
+        '4. Copy the "code" value from your browser address bar',
+        '5. Visit /tiktok/debug/exchange-code?code=PASTE_CODE_HERE to get your access token'
       ]
     });
   } catch (error: any) {
@@ -78,6 +78,25 @@ router.get('/debug/auth-url', (req, res) => {
       status: 'error',
       message: error.message
     });
+  }
+});
+
+// Debug endpoint: Manually exchange an authorization code for access token
+router.get('/debug/exchange-code', async (req, res) => {
+  try {
+    const code = req.query.code as string;
+    if (!code) {
+      return res.status(400).json({ error: 'Provide ?code=YOUR_AUTH_CODE' });
+    }
+    const tokenData = await controller.service.getAccessToken(code);
+    console.log('✅ TikTok token exchanged:', tokenData);
+    res.json({
+      status: 'success',
+      message: 'Token exchanged! Update TIKTOK_ACCESS_TOKEN with the access_token below.',
+      tokenData
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
