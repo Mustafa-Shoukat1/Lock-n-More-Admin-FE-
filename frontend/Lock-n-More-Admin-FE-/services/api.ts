@@ -404,7 +404,50 @@ export const api = {
     await request(`/users/${id}`, { method: 'DELETE' }, token);
   },
 
-  // --- Generic HTTP helpers (used by FollowupSettings, etc.) ---
+  // --- Media Upload ---
+  async uploadMedia(token: string, blob: Blob, mimeType: string): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', blob, `recording.${mimeType.split('/')[1] || 'webm'}`);
+    const response = await fetch(`${API_BASE_URL}/media/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Media upload failed');
+    return data.url as string;
+  },
+
+  // --- Audio Message Send ---
+  async sendAudioMessage(token: string, platform: Platform, to: string, audioBlob: Blob): Promise<void> {
+    const mimeType = audioBlob.type || 'audio/webm';
+    const audioUrl = await this.uploadMedia(token, audioBlob, mimeType);
+    const endpointByPlatform: Record<Platform, string> = {
+      whatsapp: '/whatsapp/send-audio',
+      instagram: '/instagram/send-audio',
+      tiktok: '/tiktok/send',
+    };
+    await request(endpointByPlatform[platform], {
+      method: 'POST',
+      body: JSON.stringify({ to, audioUrl }),
+    }, token);
+  },
+
+  // --- Stripe Checkout ---
+  async createCheckout(token: string, data: {
+    productId: string | number;
+    variantId: string | number;
+    price: number;
+    productTitle: string;
+    variantTitle?: string;
+    platform: string;
+    imageUrl?: string;
+  }): Promise<{ url: string; orderId: number }> {
+    return request('/stripe/checkout', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }, token);
+  },
   async get(path: string, token?: string): Promise<{ data: any }> {
     const session = this.getStoredSession();
     const tok = token || session?.token || '';

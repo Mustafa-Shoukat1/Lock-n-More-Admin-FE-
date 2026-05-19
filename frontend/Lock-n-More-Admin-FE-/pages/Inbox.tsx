@@ -15,6 +15,7 @@ const Inbox: React.FC = () => {
   const [showStaffPicker, setShowStaffPicker] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [invoiceAmount, setInvoiceAmount] = useState('0');
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [showFollowupModal, setShowFollowupModal] = useState(false);
   const [followupMessage, setFollowupMessage] = useState('');
@@ -26,9 +27,12 @@ const Inbox: React.FC = () => {
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [sentiment, setSentiment] = useState<string | null>(null);
+  const [isSendingAudio, setIsSendingAudio] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const activeChat = useMemo(() => conversations.find(c => c.id === selectedId), [conversations, selectedId]);
 
@@ -74,25 +78,85 @@ const Inbox: React.FC = () => {
     setShowMediaLibrary(false);
   };
 
-  const startRecording = () => {
-    setIsRecording(true);
-    setRecordingTime(0);
-    timerRef.current = window.setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      recorder.start(250);
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = window.setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+    } catch {
+      // Microphone permission denied — fall back to UI-only mode
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = window.setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+    }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setIsRecording(false);
-    if (selectedId && recordingTime > 0) {
-      sendMessage(selectedId, `Voice Signal Captured (${recordingTime}s)`, 'staff', 'voice');
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
+      recorder.stream.getTracks().forEach(t => t.stop());
+      recorder.onstop = async () => {
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const session = api.getStoredSession();
+        if (!session?.token || !activeChat || recordingTime === 0) return;
+        setIsSendingAudio(true);
+        try {
+          await api.sendAudioMessage(session.token, activeChat.platform, activeChat.customerPhone, audioBlob);
+          sendMessage(selectedId!, `🎙️ Voice message (${recordingTime}s)`, 'staff', 'voice');
+        } catch {
+          sendMessage(selectedId!, `🎙️ Voice message (${recordingTime}s)`, 'staff', 'voice');
+        } finally {
+          setIsSendingAudio(false);
+        }
+      };
+    } else if (selectedId && recordingTime > 0) {
+      sendMessage(selectedId, `🎙️ Voice message (${recordingTime}s)`, 'staff', 'voice');
     }
     setRecordingTime(0);
+    mediaRecorderRef.current = null;
   };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleIssueInvoice = async () => {
+    if (!activeChat || !invoiceAmount || Number(invoiceAmount) <= 0) return;
+    const session = api.getStoredSession();
+    if (!session?.token) return;
+    setInvoiceLoading(true);
+    try {
+      const firstProduct = products[0];
+      const result = await api.createCheckout(session.token, {
+        productId: firstProduct?.id || '0',
+        variantId: '0',
+        price: Number(invoiceAmount),
+        productTitle: firstProduct?.name || 'Custom Order',
+        variantTitle: 'Custom',
+        platform: activeChat.platform,
+      });
+      window.open(result.url, '_blank', 'noopener,noreferrer');
+      setShowInvoiceModal(false);
+    } catch (err: any) {
+      // Stripe not configured — fall back to local invoice
+      generateInvoice(selectedId!, parseFloat(invoiceAmount));
+      setShowInvoiceModal(false);
+    } finally {
+      setInvoiceLoading(false);
+    }
   };
 
   const fetchAiSuggestion = async () => {
@@ -351,6 +415,8 @@ const Inbox: React.FC = () => {
                 <div className="flex items-center gap-3">
                   {inputText.trim() ? (
                     <button onClick={handleSend} className="p-3.5 bg-brand text-white rounded-full shadow-xl hover:scale-105 active:scale-95 transition-all shadow-brand/30"><Send size={20}/></button>
+                  ) : isSendingAudio ? (
+                    <div className="p-3.5 rounded-full bg-brand/10 text-brand"><Loader2 size={20} className="animate-spin"/></div>
                   ) : (
                     <button 
                       onMouseDown={startRecording} onMouseUp={stopRecording} 
@@ -402,7 +468,7 @@ const Inbox: React.FC = () => {
                 <p className="text-[9px] font-black uppercase text-slate-400 mb-3 tracking-widest">Settlement Index (RM)</p>
                 <input type="number" value={invoiceAmount} onChange={(e)=>setInvoiceAmount(e.target.value)} className="w-full bg-transparent text-5xl font-black font-outfit outline-none focus:text-brand" autoFocus />
              </div>
-             <button onClick={() => {generateInvoice(selectedId!, parseFloat(invoiceAmount)); setShowInvoiceModal(false);}} className="w-full py-6 bg-brand text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-brand/30 hover:scale-105 active:scale-95 transition-all">Issue Settlement</button>
+             <button onClick={handleIssueInvoice} disabled={invoiceLoading} className="w-full py-6 bg-brand text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-brand/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2">{invoiceLoading ? <><Loader2 size={16} className="animate-spin"/> Processing...</> : 'Issue Settlement'}</button>
           </div>
         </div>
       )}
