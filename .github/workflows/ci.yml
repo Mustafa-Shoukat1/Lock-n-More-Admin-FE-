@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Backend ───────────────────────────────────────────────────────────────
+  backend:
+    name: Backend — Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/Toto-Backend
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://test:test@localhost:5432/test
+      JWT_SECRET: ci-secret-placeholder-32-chars-long
+      OPENAI_API_KEY: test
+      SHOPIFY_CLIENT_ID: test
+      SHOPIFY_CLIENT_SECRET: test
+      SHOPIFY_CATALOG_APP_ID: test
+      SHOPIFY_CATALOG_APP_SECRET: test
+      SHOPIFY_API_VERSION: "2024-01"
+      SHOPIFY_STORE_DOMAIN: example.myshopify.com
+      SHOPIFY_ACCESS_TOKEN: test
+      WHATSAPP_ACCESS_TOKEN: test
+      WHATSAPP_PHONE_NUMBER_ID: test
+      WHATSAPP_VERIFY_TOKEN: test-verify-token
+      DO_SPACES_ENDPOINT: https://example.digitaloceanspaces.com
+      DO_SPACES_KEY: test
+      DO_SPACES_SECRET: test
+      DO_SPACES_BUCKET: test-bucket
+      DO_SPACES_REGION: sgp1
+      TIKTOK_ACCESS_TOKEN: test
+      TIKTOK_CLIENT_ID: test
+      TIKTOK_CLIENT_SECRET: test
+      TIKTOK_REDIRECT_URI: http://localhost:5001/tiktok/callback
+      STRIPE_SECRET_KEY: test
+      STRIPE_WEBHOOK_SECRET: test
+      FRONTEND_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/Toto-Backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+  # ─── Frontend ──────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend — Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/Lock-n-More-Admin-FE-
+
+    env:
+      VITE_API_BASE_URL: https://locknmore-backend-gk9kc.ondigitalocean.app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/Lock-n-More-Admin-FE-/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test

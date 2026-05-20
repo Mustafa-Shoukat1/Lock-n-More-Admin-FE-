@@ -38,6 +38,13 @@ export class StripeWebhookController {
       logger.info(`✅ Payment completed for Order: ${orderId}, User: ${userId}, Platform: ${platform}`);
 
       try {
+        // Idempotency guard: skip if order already paid
+        const existing = await this.orderService.getOrder(parseInt(orderId));
+        if (existing?.status === 'paid') {
+          logger.info(`⚡ Stripe event ${event.id} already processed (order ${orderId} is paid). Skipping.`);
+          return res.status(200).json({ received: true });
+        }
+
         // 1. Update internal order status
         await this.orderService.updateOrderStatus(
           parseInt(orderId), 

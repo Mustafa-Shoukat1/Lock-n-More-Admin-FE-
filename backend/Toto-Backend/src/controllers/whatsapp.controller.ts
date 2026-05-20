@@ -5,6 +5,20 @@ import { AIService } from '../services/ai.service';
 const whatsAppService = new WhatsAppService();
 const aiService = new AIService();
 
+// In-memory idempotency cache: wamid → timestamp (ms). Prevents duplicate processing on Meta retries.
+const _processedWamids = new Map<string, number>();
+const WAMID_TTL_MS = 60 * 60 * 1000; // 1 hour
+function isDuplicateWamid(wamid: string): boolean {
+    const now = Date.now();
+    // Evict entries older than TTL
+    for (const [id, ts] of _processedWamids) {
+        if (now - ts > WAMID_TTL_MS) _processedWamids.delete(id);
+    }
+    if (_processedWamids.has(wamid)) return true;
+    _processedWamids.set(wamid, now);
+    return false;
+}
+
 export class WhatsAppController {
     async sendMessage(req: Request, res: Response) {
         try {
@@ -199,6 +213,12 @@ export class WhatsAppController {
                 const message = value?.messages?.[0];
 
                 if (message) {
+                    // Idempotency guard: skip duplicate wamids (Meta retries the same event on non-200 responses)
+                    if (message.id && isDuplicateWamid(message.id)) {
+                        console.log(`⚡ Duplicate wamid ${message.id} skipped`);
+                        return res.sendStatus(200);
+                    }
+
                     const from = message.from;
                     const text = message.text?.body;
                     const contactName = value.contacts?.[0]?.profile?.name || from;
