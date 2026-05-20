@@ -86,6 +86,11 @@ const request = async <T>(path: string, options: RequestInit = {}, token?: strin
 
   const payload = await parseJsonSafely(response);
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('toto_backend_session');
+      localStorage.removeItem('isLoggedIn');
+      window.location.href = '/login';
+    }
     const message = payload?.error || payload?.message || `Request failed: ${response.status}`;
     throw new Error(message);
   }
@@ -216,11 +221,15 @@ export const api = {
   async fetchConversations(token: string, user: User): Promise<Conversation[]> {
     const query = `?userId=${encodeURIComponent(user.id)}&role=${encodeURIComponent(user.role)}`;
 
-    const [wa, ig, tt] = await Promise.all([
+    const [waResult, igResult, ttResult] = await Promise.allSettled([
       request<BackendConversation[]>(`/whatsapp/conversations${query}`, { method: 'GET' }, token),
       request<BackendConversation[]>(`/instagram/conversations${query}`, { method: 'GET' }, token),
       request<BackendConversation[]>(`/tiktok/conversations${query}`, { method: 'GET' }, token),
     ]);
+
+    const wa = waResult.status === 'fulfilled' ? waResult.value : [];
+    const ig = igResult.status === 'fulfilled' ? igResult.value : [];
+    const tt = ttResult.status === 'fulfilled' ? ttResult.value : [];
 
     return [
       ...wa.map((item) => mapConversation('whatsapp', item)),

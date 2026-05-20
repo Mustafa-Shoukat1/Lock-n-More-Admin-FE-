@@ -340,14 +340,6 @@ const App: React.FC = () => {
     };
   }, [isLoggedIn, activeUser?.id]);
 
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    const interval = setInterval(() => {
-      if (Math.random() > 0.8) simulateLead();
-    }, 45000);
-    return () => clearInterval(interval);
-  }, [isLoggedIn]);
-
   const playNotificationSound = (type: 'message' | 'system' = 'message') => {
     const url = SOUNDS[type];
     const audio = new Audio(url);
@@ -573,7 +565,6 @@ const App: React.FC = () => {
     }, 500);
     setTimeout(() => {
         addLog('success', 'AUDIT: Omnichannel Gateways (WhatsApp, IG, TikTok) verified.');
-        simulateLead();
     }, 1500);
     setTimeout(() => {
         addLog('success', 'AUDIT: AI Neural core (OpenAI backend) responding within 2.5s threshold.');
@@ -583,21 +574,22 @@ const App: React.FC = () => {
   };
 
   const syncCatalog = () => {
-    addLog('info', 'Establishing Shopify Admin Node handshake...');
-    setTimeout(() => {
-      setData(prev => {
-        const updatedProducts = prev.products.map(p => ({
-          ...p,
-          stock: Math.floor(Math.random() * 50),
-          price: p.price + (Math.random() > 0.8 ? (Math.random() * 20 - 10) : 0)
-        }));
-        const next = { ...prev, products: updatedProducts };
-        db.save(next);
-        return next;
+    const session = api.getStoredSession();
+    if (!session?.token) return;
+    addLog('info', 'Syncing catalog from Shopify...');
+    api.fetchProducts(session.token)
+      .then(products => {
+        if (products.length > 0) {
+          setProducts(products);
+          addLog('success', `Catalog synced: ${products.length} products loaded from Shopify.`);
+          playNotificationSound('system');
+        } else {
+          addLog('warning', 'Catalog sync complete: no products returned from Shopify.');
+        }
+      })
+      .catch((err: any) => {
+        addLog('error', `Catalog sync failed: ${err.message}`);
       });
-      addLog('success', 'Master Catalog synchronized. SKU inventory data verified.');
-      playNotificationSound('system');
-    }, 1200);
   };
 
   const t = (key: string) => (translations[lang] as any)[key] || key;
