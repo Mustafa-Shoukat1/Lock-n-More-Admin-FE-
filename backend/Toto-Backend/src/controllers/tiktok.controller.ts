@@ -4,7 +4,7 @@ import { TikTokService } from '../services/tiktok.service';
 
 export class TikTokController {
   private adapter: TikTokAdapter;
-  public service: TikTokService;
+  private service: TikTokService;
 
   constructor() {
     this.adapter = new TikTokAdapter();
@@ -119,16 +119,24 @@ export class TikTokController {
 
       console.log('🔄 TikTok OAuth Callback received. Exchanging code...');
       const tokenData = await this.service.getAccessToken(code as string);
-      
-      // In a real application, you would save tokenData (access_token, open_id, etc.) to your DB linked to the user
-      console.log('✅ TikTok OAuth successful:', tokenData);
+      const accessToken: string = tokenData?.access_token || tokenData?.data?.access_token || '';
 
-      // Redirect back to dashboard
-      const dashboardUrl = `${process.env.FRONTEND_URL?.replace(/\/$/, '')}/#/inbox?connection=tiktok&status=success`;
+      if (accessToken) {
+        // Apply token immediately (no restart needed)
+        this.service.setAccessToken(accessToken);
+        console.log('✅ TikTok OAuth successful. Token applied to live service.');
+        console.log('⚠️  IMPORTANT: Set TIKTOK_ACCESS_TOKEN in App Platform env to persist across restarts.');
+        console.log(`Token value: ${accessToken}`);
+      }
+
+      // Redirect back to dashboard with token surfaced for admin copy
+      const base = process.env.FRONTEND_URL?.replace(/\/$/, '') || '';
+      const dashboardUrl = `${base}/#/inbox?connection=tiktok&status=success&token=${encodeURIComponent(accessToken)}`;
       res.redirect(dashboardUrl);
     } catch (error: any) {
       console.error('TikTok OAuth Error:', error.message);
-      const errorUrl = `${process.env.FRONTEND_URL?.replace(/\/$/, '')}/#/inbox?connection=tiktok&status=error&message=${encodeURIComponent(error.message)}`;
+      const base = process.env.FRONTEND_URL?.replace(/\/$/, '') || '';
+      const errorUrl = `${base}/#/inbox?connection=tiktok&status=error&message=${encodeURIComponent(error.message)}`;
       res.redirect(errorUrl);
     }
   }

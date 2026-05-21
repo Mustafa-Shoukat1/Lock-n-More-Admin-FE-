@@ -16,6 +16,13 @@ export class TikTokService {
     this.notificationService = new NotificationService();
   }
 
+  /** Hot-update the access token without restarting the process. */
+  setAccessToken(token: string): void {
+    this.accessToken = token;
+    process.env.TIKTOK_ACCESS_TOKEN = token;
+    console.log('✅ TikTok access token updated in-process.');
+  }
+
   /**
    * Exchange authorization code for access token (TikTok OAuth 2.0)
    */
