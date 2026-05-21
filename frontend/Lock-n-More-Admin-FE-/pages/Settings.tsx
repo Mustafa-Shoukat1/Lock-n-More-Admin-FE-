@@ -19,6 +19,7 @@ const Settings: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState('agent');
+  const [invitePassword, setInvitePassword] = useState('');
 
   // Debounced auto-save for profile
   useEffect(() => {
@@ -40,25 +41,27 @@ const Settings: React.FC = () => {
   }, [editName, editEmail, activeUser, setActiveUser, addLog]);
 
   const handleInvite = async () => {
-    if (!inviteName || !inviteEmail) return;
+    if (!inviteName || !inviteEmail || !invitePassword) return;
     const session = api.getStoredSession();
     if (session?.token) {
       try {
         await api.createUser(session.token, {
           name: inviteName,
           email: inviteEmail,
-          password: 'changeme123',
+          password: invitePassword,
           role: inviteRole,
         });
         const users = await api.fetchUsers(session.token);
         setStaff(users);
       } catch (err: any) {
         alert(err.message || 'Failed to create user');
+        return;
       }
     }
     setShowInviteModal(false);
     setInviteName('');
     setInviteEmail('');
+    setInvitePassword('');
     addLog('success', `New Node Authorization sent to ${inviteEmail}.`);
   };
 
@@ -298,6 +301,10 @@ const Settings: React.FC = () => {
                 <div className="space-y-4">
                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-6">Staff Auth Email</label>
                    <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="w-full p-6 bg-slate-100 dark:bg-slate-950 border-none rounded-[2rem] text-sm font-bold outline-none focus:ring-4 focus:ring-brand/10 transition-all shadow-inner" placeholder="daniel@locksnmore.com" />
+                </div>
+                <div className="space-y-4">
+                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-6">Temporary Password</label>
+                   <input type="password" value={invitePassword} onChange={(e) => setInvitePassword(e.target.value)} className="w-full p-6 bg-slate-100 dark:bg-slate-950 border-none rounded-[2rem] text-sm font-bold outline-none focus:ring-4 focus:ring-brand/10 transition-all shadow-inner" placeholder="Min. 8 characters" autoComplete="new-password" />
                 </div>
                 <div className="space-y-6">
                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] px-6">Authorized Perimeter Role</label>

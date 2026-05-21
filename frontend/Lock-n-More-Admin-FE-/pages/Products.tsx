@@ -34,7 +34,7 @@ const Products: React.FC = () => {
         if (p >= 100) {
           clearInterval(interval);
           setIsSyncing(false);
-          syncCatalog(); // Actually randomizes stock/prices
+          syncCatalog();
           setNotifications(prev => [{ id: Date.now(), title: `${source.toUpperCase()} Synced`, message: `Inventory perimeter updated.`, type: 'system', time: 'Just now', read: false }, ...prev]);
           return 100;
         }

@@ -12,6 +12,21 @@ const Orders: React.FC = () => {
 
   const totalRevenue = useMemo(() => orders.reduce((acc, curr) => acc + curr.amount, 0), [orders]);
 
+  const exportCsv = () => {
+    const header = 'Order ID,Customer,Amount (RM),Status,Platform,Date';
+    const rows = filteredOrders.map(o =>
+      [o.id, `"${o.customer}"`, o.amount, o.status, o.platform, o.date].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-6 md:p-12 space-y-10 max-w-7xl mx-auto pb-32">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 bg-white dark:bg-slate-950 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -20,7 +35,7 @@ const Orders: React.FC = () => {
           <p className="text-slate-500 font-medium">Real-time e-commerce synchronization node.</p>
         </div>
         <div className="flex gap-3 w-full lg:w-auto">
-          <button className="flex-1 lg:flex-none px-8 py-4 bg-slate-100 dark:bg-slate-800 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2">
+          <button onClick={exportCsv} className="flex-1 lg:flex-none px-8 py-4 bg-slate-100 dark:bg-slate-800 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-all">
             <Download size={18} /> Export CSV
           </button>
         </div>
