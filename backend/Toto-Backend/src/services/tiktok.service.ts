@@ -8,12 +8,19 @@ export class TikTokService {
   private accessToken: string;
   private aiService: AIService;
   private notificationService: NotificationService;
+  private tokenExpiresAt: number = 0;
 
   constructor() {
     this.apiUrl = 'https://open-api.tiktok.com';
     this.accessToken = process.env.TIKTOK_ACCESS_TOKEN || '';
     this.aiService = new AIService();
     this.notificationService = new NotificationService();
+    // Auto-fetch client token on startup if none is configured
+    if (!this.accessToken) {
+      this.refreshClientToken().catch(err =>
+        console.warn('⚠️ TikTok client token auto-fetch failed (non-fatal):', err.message)
+      );
+    }
   }
 
   /** Hot-update the access token without restarting the process. */
@@ -21,6 +28,37 @@ export class TikTokService {
     this.accessToken = token;
     process.env.TIKTOK_ACCESS_TOKEN = token;
     console.log('✅ TikTok access token updated in-process.');
+  }
+
+  /**
+   * Fetch a client-credentials token (no browser/redirect needed).
+   * These tokens are valid for 2 hours and auto-refresh when expired.
+   */
+  async refreshClientToken(): Promise<string> {
+    const url = 'https://open.tiktokapis.com/v2/oauth/token/';
+    const params = new URLSearchParams();
+    params.append('client_key', process.env.TIKTOK_CLIENT_ID || '');
+    params.append('client_secret', process.env.TIKTOK_CLIENT_SECRET || '');
+    params.append('grant_type', 'client_credentials');
+
+    const response = await axios.post(url, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+
+    const token = response.data.access_token;
+    const expiresIn = response.data.expires_in || 7200;
+    this.setAccessToken(token);
+    this.tokenExpiresAt = Date.now() + (expiresIn - 300) * 1000; // refresh 5 min early
+    console.log(`✅ TikTok client token obtained, expires in ${expiresIn}s`);
+    return token;
+  }
+
+  /** Ensure a valid token is available, refreshing if expired. */
+  async ensureToken(): Promise<string> {
+    if (!this.accessToken || (this.tokenExpiresAt > 0 && Date.now() > this.tokenExpiresAt)) {
+      return this.refreshClientToken();
+    }
+    return this.accessToken;
   }
 
   /**
@@ -54,6 +92,7 @@ export class TikTokService {
    */
   async sendMessage(openId: string, message: string, userId?: number, role?: string): Promise<any> {
     try {
+      await this.ensureToken();
       const url = `${this.apiUrl}/message/send/`;
       const response = await axios.post(
         url,
